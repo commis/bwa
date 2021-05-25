@@ -14,6 +14,7 @@ PROG=		bwa
 INCLUDES=	
 LIBS=		-lm -lz -lpthread
 SUBDIRS=	.
+OUTPUT=		./lib
 
 ifeq ($(shell uname -s),Linux)
 	LIBS += -lrt
@@ -22,21 +23,22 @@ endif
 .SUFFIXES:.c .o .cc
 
 .c.o:
-		$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(INCLUDES) $< -o $@
 
 all:$(PROG)
 
 bwa:libbwa.a $(AOBJS) main.o
-		$(CC) $(CFLAGS) $(DFLAGS) $(AOBJS) main.o -o $@ -L. -lbwa $(LIBS)
+	$(CC) $(CFLAGS) $(DFLAGS) $(AOBJS) main.o -o $@ -L. -lbwa $(LIBS)
+	mv *.o libbwa.a $(OUTPUT)/
 
 bwamem-lite:libbwa.a example.o
-		$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)
+	$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)
 
 libbwa.a:$(LOBJS)
-		$(AR) -csru $@ $(LOBJS)
+	$(AR) -csru $@ $(LOBJS)
 
 clean:
-		rm -f gmon.out *.o a.out $(PROG) *~ *.a
+	rm -f gmon.out *.o a.out $(PROG) *~ *.a $(OUTPUT)/*.*
 
 depend:
 	( LC_ALL=C ; export LC_ALL; makedepend -Y -- $(CFLAGS) $(DFLAGS) -- *.c )
