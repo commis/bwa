@@ -39,28 +39,28 @@ typedef uint8_t ubyte_t;
 #endif
 
 typedef struct {
-	int64_t offset;
-	int32_t len;
-	int32_t n_ambs;
-	uint32_t gi;
-	int32_t is_alt;
-	char *name, *anno;
+    int64_t offset; //染色体偏移量
+    int32_t len; //染色体长度
+    int32_t n_ambs; //多少个模糊碱基
+    uint32_t gi;
+    int32_t is_alt;
+    char *name, *anno; //染色体名名和注释
 } bntann1_t;
 
 typedef struct {
-	int64_t offset;
-	int32_t len;
-	char amb;
+    int64_t offset; //偏移量
+    int32_t len; //长度
+    char amb; //模式碱基的字符
 } bntamb1_t;
 
 typedef struct {
-	int64_t l_pac;
-	int32_t n_seqs;
-	uint32_t seed;
-	bntann1_t *anns; // n_seqs elements
-	int32_t n_holes;
-	bntamb1_t *ambs; // n_holes elements
-	FILE *fp_pac;
+    int64_t l_pac;
+    int32_t n_seqs; //基因组序列数
+    uint32_t seed; //随机数种子
+    bntann1_t *anns; // n_seqs elements
+    int32_t n_holes; //染色体有多少个空缺
+    bntamb1_t *ambs; // n_holes elements
+    FILE *fp_pac;
 } bntseq_t;
 
 extern unsigned char nst_nt4_table[256];
@@ -69,24 +69,32 @@ extern unsigned char nst_nt4_table[256];
 extern "C" {
 #endif
 
-	void bns_dump(const bntseq_t *bns, const char *prefix);
-	bntseq_t *bns_restore(const char *prefix);
-	bntseq_t *bns_restore_core(const char *ann_filename, const char* amb_filename, const char* pac_filename);
-	void bns_destroy(bntseq_t *bns);
-	int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only);
-	int bns_pos2rid(const bntseq_t *bns, int64_t pos_f);
-	int bns_cnt_ambi(const bntseq_t *bns, int64_t pos_f, int len, int *ref_id);
-	uint8_t *bns_get_seq(int64_t l_pac, const uint8_t *pac, int64_t beg, int64_t end, int64_t *len);
-	uint8_t *bns_fetch_seq(const bntseq_t *bns, const uint8_t *pac, int64_t *beg, int64_t mid, int64_t *end, int *rid);
-	int bns_intv2rid(const bntseq_t *bns, int64_t rb, int64_t re);
+void bns_dump(const bntseq_t *bns, const char *prefix);
+
+bntseq_t *bns_restore(const char *prefix);
+
+bntseq_t *bns_restore_core(const char *ann_filename, const char *amb_filename, const char *pac_filename);
+
+void bns_destroy(bntseq_t *bns);
+
+int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only);
+
+int bns_pos2rid(const bntseq_t *bns, int64_t pos_f);
+
+int bns_cnt_ambi(const bntseq_t *bns, int64_t pos_f, int len, int *ref_id);
+
+uint8_t *bns_get_seq(int64_t l_pac, const uint8_t *pac, int64_t beg, int64_t end, int64_t *len);
+
+uint8_t *bns_fetch_seq(const bntseq_t *bns, const uint8_t *pac, int64_t *beg, int64_t mid, int64_t *end, int *rid);
+
+int bns_intv2rid(const bntseq_t *bns, int64_t rb, int64_t re);
 
 #ifdef __cplusplus
 }
 #endif
 
-static inline int64_t bns_depos(const bntseq_t *bns, int64_t pos, int *is_rev)
-{
-	return (*is_rev = (pos >= bns->l_pac))? (bns->l_pac<<1) - 1 - pos : pos;
+static inline int64_t bns_depos(const bntseq_t *bns, int64_t pos, int *is_rev) {
+    return (*is_rev = (pos >= bns->l_pac)) ? (bns->l_pac << 1) - 1 - pos : pos;
 }
 
 #endif

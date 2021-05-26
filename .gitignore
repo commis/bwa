@@ -6,3 +6,4 @@ test64
 Makefile.bak
 bwamem-lite
 lib/
+data/*.fna.*

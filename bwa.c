@@ -132,7 +132,15 @@ void bseq_classify(int n, bseq1_t *seqs, int m[2], bseq1_t *sep[2])
 /*****************
  * CIGAR related *
  *****************/
-
+// 初始化打分的矩阵
+/*
+i\j	0	1	2	3	$
+0	1	-4	-4	-4	-1
+1	-4	1	-4	-4	-1
+2	-4	-4	1	-4	-1
+3	-4	-4	-4	1	-1
+$	-1	-1	-1	-1	-1
+*/
 void bwa_fill_scmat(int a, int b, int8_t mat[25])
 {
 	int i, j, k;

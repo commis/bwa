@@ -84,13 +84,14 @@ int bwa_shm_stage(bwaidx_t *idx, const char *hint, const char *_tmpfn)
 	return 0;
 }
 
+// 加载FM-Index索引数据文件
 bwaidx_t *bwa_idx_load_from_shm(const char *hint)
 {
 	const char *name;
 	uint8_t *shm, *shm_idx;
 	uint16_t *cnt, i;
 	char *p, path[PATH_MAX + 1];
-	int shmid;
+	int shmid; // 内存映射句柄
 	int64_t l_mem;
 	bwaidx_t *idx;
 
@@ -98,6 +99,7 @@ bwaidx_t *bwa_idx_load_from_shm(const char *hint)
 	for (name = hint + strlen(hint) - 1; name >= hint && *name != '/'; --name);
 	++name;
 	if ((shmid = shm_open("/bwactl", O_RDONLY, 0)) < 0) return 0;
+	// 创建内存映射文件
 	shm = mmap(0, BWA_CTL_SIZE, PROT_READ, MAP_SHARED, shmid, 0);
 	cnt = (uint16_t*)shm;
 	if (cnt[0] == 0) return 0;

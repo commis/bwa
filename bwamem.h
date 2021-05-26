@@ -50,37 +50,40 @@ typedef struct __smem_i smem_i;
 #define MEM_F_XB        0x2000
 
 typedef struct {
-	int a, b;               // match score and mismatch penalty
-	int o_del, e_del;
-	int o_ins, e_ins;
-	int pen_unpaired;       // phred-scaled penalty for unpaired reads
-	int pen_clip5,pen_clip3;// clipping penalty. This score is not deducted from the DP score.
-	int w;                  // band width
-	int zdrop;              // Z-dropoff
-
-	uint64_t max_mem_intv;
-
-	int T;                  // output score threshold; only affecting output
-	int flag;               // see MEM_F_* macros
-	int min_seed_len;       // minimum seed length
-	int min_chain_weight;
-	int max_chain_extend;
-	float split_factor;     // split into a seed if MEM is longer than min_seed_len*split_factor
-	int split_width;        // split into a seed if its occurence is smaller than this value
+	// 算法相关参数
+    int n_threads;          // number of threads，线程数量，默认值1
+	int min_seed_len;       // minimum seed length，默认值19
+    int w;                  // band width，带宽，长度大于w的gaps是不会被找到的，默认值100
+	int zdrop;              // 当延伸过程中的最佳分数和当前分数的差大于|i-j|*A+zdrop时，停止延伸，i和j分别是查询序列和参考序列的当前位置，A是匹配分数，默认值100
+	float split_factor;     // 当一个MEM长于最低种子长度*FLOAT时，触发新的种子匹配。对调节性能来说，这是一个关键的参数，默认值1.5
+	uint64_t max_mem_intv;  // 默认值20
 	int max_occ;            // skip a seed if its occurence is larger than this value
-	int max_chain_gap;      // do not chain seed if it is max_chain_gap-bp away from the closest seed
-	int n_threads;          // number of threads
-	int chunk_size;         // process chunk_size-bp sequences in a batch
-	float mask_level;       // regard a hit as redundant if the overlap with another better hit is over mask_level times the min length of the two hits
 	float drop_ratio;       // drop a chain if its seed coverage is below drop_ratio times the seed coverage of a better chain overlapping with the small chain
-	float XA_drop_ratio;    // when counting hits for the XA tag, ignore alignments with score < XA_drop_ratio * max_score; only effective for the XA tag
-	float mask_level_redun;
-	float mapQ_coef_len;
-	int mapQ_coef_fac;
-	int max_ins;            // when estimating insert size distribution, skip pairs with insert longer than this value
 	int max_matesw;         // perform maximally max_matesw rounds of mate-SW for each end
-	int max_XA_hits, max_XA_hits_alt; // if there are max_hits or fewer, output them all
+	int min_chain_weight;   // 默认值0
+
+	// 打分矩阵表相关参数
+    int a, b;               // 匹配得分矩阵使用，a匹配分值，b不匹配惩罚，默认值a=1，b=4
+    int o_del, e_del;       // 默认值o_del=6，e_del=1
+    int o_ins, e_ins;       // 默认值o_ins=6，e_ins=1
+    int pen_unpaired;       // phred-scaled penalty for unpaired reads，默认值17
+    int pen_clip5,pen_clip3;// clipping penalty. This score is not deducted from the DP score. 默认值5
 	int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
+
+    // 输入/输出相关参数
+	int T;                  // output score threshold; only affecting output，默认值30
+	int flag;               // see MEM_F_* macros
+	int max_chain_extend;
+	int split_width;        // split into a seed if its occurence is smaller than this value，默认值20
+	int max_chain_gap;      // do not chain seed if it is max_chain_gap-bp away from the closest seed，默认值10000
+	int chunk_size;         // process chunk_size-bp sequences in a batch，默认值10000000
+	float mask_level;       // regard a hit as redundant if the overlap with another better hit is over mask_level times the min length of the two hits
+	float XA_drop_ratio;    // when counting hits for the XA tag, ignore alignments with score < XA_drop_ratio * max_score; only effective for the XA tag
+	float mask_level_redun; // 默认值0.95
+	float mapQ_coef_len;    // 默认值50
+	int mapQ_coef_fac;      // 默认值log(mapQ_coef_len)
+	int max_ins;            // when estimating insert size distribution, skip pairs with insert longer than this value
+	int max_XA_hits, max_XA_hits_alt; // if there are max_hits or fewer, output them all，默认值max_XA_hits=5，max_XA_hits_alt=200
 } mem_opt_t;
 
 typedef struct {

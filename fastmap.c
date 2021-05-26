@@ -122,6 +122,7 @@ static void *process(void *shared, int step, void *_data)
 	return 0;
 }
 
+// 更新部分参数值
 static void update_a(mem_opt_t *opt, const mem_opt_t *opt0)
 {
 	if (opt0->a) { // matching score is changed
@@ -320,6 +321,7 @@ int main_mem(int argc, char *argv[])
 		return 1;
 	}
 
+	// 不同的基因类型，设置不同的参数默认值
 	if (mode) {
 		if (strcmp(mode, "intractg") == 0) {
 			if (!opt0.o_del) opt->o_del = 16;
