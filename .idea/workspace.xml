@@ -18,18 +18,8 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dae602c6-82ac-4852-b68d-65538f9ffc36" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/data/gene.fna" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bntseq.c" beforeDir="false" afterPath="$PROJECT_DIR$/bntseq.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bntseq.h" beforeDir="false" afterPath="$PROJECT_DIR$/bntseq.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bwa.c" beforeDir="false" afterPath="$PROJECT_DIR$/bwa.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bwamem.h" beforeDir="false" afterPath="$PROJECT_DIR$/bwamem.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bwashm.c" beforeDir="false" afterPath="$PROJECT_DIR$/bwashm.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bwtindex.c" beforeDir="false" afterPath="$PROJECT_DIR$/bwtindex.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fastmap.c" beforeDir="false" afterPath="$PROJECT_DIR$/fastmap.c" afterDir="false" />
+    <list default="true" id="dae602c6-82ac-4852-b68d-65538f9ffc36" name="Default Changelist" comment="代码格式化">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,6 +75,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_MARK_IGNORED_FILES_AS_EXCLUDED" value="true" />
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
@@ -100,11 +91,6 @@
     </key>
   </component>
   <component name="RunManager" selected="Makefile Application.bwa">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="bwa" TARGET_NAME="all" CONFIG_NAME="all" version="1">
       <method v="2">
         <option name="CLION.COMPOUND.BUILD" enabled="true" />
@@ -130,6 +116,11 @@
         <option name="CLION.COMPOUND.BUILD" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Makefile Application.all" />
       <item itemvalue="Makefile Application.bwa" />
@@ -149,6 +140,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
