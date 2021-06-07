@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/untitled/main.c" "/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/untitled/cmake-build-debug/CMakeFiles/untitled.dir/main.c.o"
+  "/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/bwa/untitled/main.c" "/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/bwa/untitled/cmake-build-debug/CMakeFiles/untitled.dir/main.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 

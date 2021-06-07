@@ -44,7 +44,7 @@ typedef struct {
     int32_t n_ambs; //多少个模糊碱基
     uint32_t gi;
     int32_t is_alt;
-    char *name, *anno; //染色体名名和注释
+    char *name, *anno; //染色体名称和注释
 } bntann1_t;
 
 typedef struct {
@@ -54,13 +54,13 @@ typedef struct {
 } bntamb1_t;
 
 typedef struct {
-    int64_t l_pac;
+    int64_t l_pac;  //处理中pac的长度计数
     int32_t n_seqs; //基因组序列数
     uint32_t seed; //随机数种子
     bntann1_t *anns; // n_seqs elements
     int32_t n_holes; //染色体有多少个空缺
     bntamb1_t *ambs; // n_holes elements
-    FILE *fp_pac;
+    FILE *fp_pac; //pac文件句柄
 } bntseq_t;
 
 extern unsigned char nst_nt4_table[256];

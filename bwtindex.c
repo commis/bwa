@@ -50,6 +50,7 @@
 
 int is_bwt(ubyte_t *T, int n);
 
+//从pac文件中读取文件长度，并计算出基于序列的长度
 int64_t bwa_seq_len(const char *fn_pac) {
     FILE *fp;
     int64_t pac_len;
@@ -62,10 +63,11 @@ int64_t bwa_seq_len(const char *fn_pac) {
     return (pac_len - 1) * 4 + (int) c;
 }
 
+// 将pac文件的数据转为bwt数据
 bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     bwt_t *bwt;
-    ubyte_t *buf, *buf2;
-    int64_t i, pac_size;
+    ubyte_t *buf, *buf2; //buf2读取pac数据的缓存区，buf为转换后的bwt数据
+    int64_t i, pac_size; //
     FILE *fp;
 
     // initialization
@@ -75,17 +77,22 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     fp = xopen(fn_pac, "rb");
 
     // prepare sequence
-    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0 ? 0 : 1);
+    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0
+        ? 0
+        : 1);
     buf2 = (ubyte_t *) calloc(pac_size, 1);
     err_fread_noeof(buf2, 1, pac_size, fp);
     err_fclose(fp);
+
     memset(bwt->L2, 0, 5 * 4);
     buf = (ubyte_t *) calloc(bwt->seq_len + 1, 1);
     for (i = 0; i < bwt->seq_len; ++i) {
         buf[i] = buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
         ++bwt->L2[1 + buf[i]];
     }
-    for (i = 2; i <= 4; ++i) bwt->L2[i] += bwt->L2[i - 1];
+    for (i = 2; i <= 4; ++i) {
+        bwt->L2[i] += bwt->L2[i - 1];
+    }
     free(buf2);
 
     // Burrows-Wheeler Transform
@@ -101,7 +108,9 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
         for (i = bwt->seq_len - 1, x = 0; i >= 0; --i) {
             int c = buf[i] + 1;
             x = rope_insert_run(r, x, c, 1, 0) + 1;
-            while (--c >= 0) x += r->c[c];
+            while (--c >= 0) {
+                x += r->c[c];
+            }
         }
         bwt->primary = x;
         rope_itr_first(r, &itr);
@@ -112,20 +121,23 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
                 int c = 0;
                 int64_t l;
                 rle_dec1(q, c, l);
-                for (i = 0; i < l; ++i)
+                for (i = 0; i < l; ++i) {
                     buf[x++] = c - 1;
+                }
             }
         }
         rope_destroy(r);
     }
     bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
-    for (i = 0; i < bwt->seq_len; ++i)
+    for (i = 0; i < bwt->seq_len; ++i) {
         bwt->bwt[i >> 4] |= buf[i] << ((15 - (i & 15)) << 1);
+    }
     free(buf);
     return bwt;
 }
 
-int bwa_pac2bwt(int argc,
+int bwa_pac2bwt(
+    int argc,
     char *argv[]) // the "pac2bwt" command; IMPORTANT: bwt generated at this step CANNOT be used with BWA. bwtupdate is required!
 {
     bwt_t *bwt;
@@ -164,7 +176,9 @@ void bwt_bwtupdate_core(bwt_t *bwt) {
             memcpy(buf + k, c, sizeof(bwtint_t) * 4);
             k += sizeof(bwtint_t); // in fact: sizeof(bwtint_t)=4*(sizeof(bwtint_t)/4)
         }
-        if (i % 16 == 0) buf[k++] = bwt->bwt[i / 16]; // 16 == sizeof(uint32_t)/2
+        if (i % 16 == 0) {
+            buf[k++] = bwt->bwt[i / 16];
+        } // 16 == sizeof(uint32_t)/2
         ++c[bwt_B00(bwt, i)];
     }
     // the last element
@@ -220,10 +234,15 @@ int bwa_index(int argc, char *argv[]) // the "index" command
     while ((c = getopt(argc, argv, "6a:p:b:")) >= 0) {
         switch (c) {
             case 'a': // if -a is not set, algo_type will be determined later
-                if (strcmp(optarg, "rb2") == 0) algo_type = BWTALGO_RB2;
-                else if (strcmp(optarg, "bwtsw") == 0) algo_type = BWTALGO_BWTSW;
-                else if (strcmp(optarg, "is") == 0) algo_type = BWTALGO_IS;
-                else err_fatal(__func__, "unknown algorithm: '%s'.", optarg);
+                if (strcmp(optarg, "rb2") == 0) {
+                    algo_type = BWTALGO_RB2;
+                } else if (strcmp(optarg, "bwtsw") == 0) {
+                    algo_type = BWTALGO_BWTSW;
+                } else if (strcmp(optarg, "is") == 0) {
+                    algo_type = BWTALGO_IS;
+                } else {
+                    err_fatal(__func__, "unknown algorithm: '%s'.", optarg);
+                }
                 break;
             case 'p':
                 prefix = strdup(optarg);
@@ -233,9 +252,13 @@ int bwa_index(int argc, char *argv[]) // the "index" command
                 break;
             case 'b':
                 block_size = strtol(optarg, &str, 10);
-                if (*str == 'G' || *str == 'g') block_size *= 1024 * 1024 * 1024;
-                else if (*str == 'M' || *str == 'm') block_size *= 1024 * 1024;
-                else if (*str == 'K' || *str == 'k') block_size *= 1024;
+                if (*str == 'G' || *str == 'g') {
+                    block_size *= 1024 * 1024 * 1024;
+                } else if (*str == 'M' || *str == 'm') {
+                    block_size *= 1024 * 1024;
+                } else if (*str == 'K' || *str == 'k') {
+                    block_size *= 1024;
+                }
                 break;
             default:
                 return 1;
@@ -268,7 +291,6 @@ int bwa_index(int argc, char *argv[]) // the "index" command
 
 // 构建FM-Index文件
 int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_size) {
-    extern void bwa_pac_rev_core(const char *fn, const char *fn_rev);
 
     char *str, *str2, *str3;
     clock_t t;
@@ -291,41 +313,58 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         err_gzclose(fp);
     }
 
-    if (algo_type == 0) algo_type = l_pac > 50000000 ? 2 : 3; // set the algorithm for generating BWT
+    if (algo_type == 0) {
+        algo_type = l_pac > 50000000
+            ? 2
+            : 3;
+    } // set the algorithm for generating BWT
     {
         strcpy(str, prefix);
         strcat(str, ".pac");
         strcpy(str2, prefix);
         strcat(str2, ".bwt");
         t = clock();
-        if (bwa_verbose >= 3) fprintf(stderr, "[bwa_index] Construct BWT for the packed sequence...\n");
-        if (algo_type == 2) bwt_bwtgen2(str, str2, block_size);
-        else if (algo_type == 1 || algo_type == 3) {
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "[bwa_index] Construct BWT for the packed sequence...\n");
+        }
+        if (algo_type == 2) {
+            bwt_bwtgen2(str, str2, block_size);
+        } else if (algo_type == 1 || algo_type == 3) {
             bwt_t *bwt;
             bwt = bwt_pac2bwt(str, algo_type == 3);
             bwt_dump_bwt(str2, bwt);
             bwt_destroy(bwt);
         }
-        if (bwa_verbose >= 3) fprintf(stderr, "[bwa_index] %.2f seconds elapse.\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "[bwa_index] %.2f seconds elapse.\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        }
     }
     {
         bwt_t *bwt;
         strcpy(str, prefix);
         strcat(str, ".bwt");
         t = clock();
-        if (bwa_verbose >= 3) fprintf(stderr, "[bwa_index] Update BWT... ");
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "[bwa_index] Update BWT... ");
+        }
         bwt = bwt_restore_bwt(str);
         bwt_bwtupdate_core(bwt);
         bwt_dump_bwt(str, bwt);
         bwt_destroy(bwt);
-        if (bwa_verbose >= 3) fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        }
     }
     {
         gzFile fp = xzopen(fa, "r");
         t = clock();
-        if (bwa_verbose >= 3) fprintf(stderr, "[bwa_index] Pack forward-only FASTA... ");
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "[bwa_index] Pack forward-only FASTA... ");
+        }
         l_pac = bns_fasta2bntseq(fp, prefix, 1);
-        if (bwa_verbose >= 3) fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        }
         err_gzclose(fp);
     }
     {
@@ -335,12 +374,16 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         strcpy(str3, prefix);
         strcat(str3, ".sa");
         t = clock();
-        if (bwa_verbose >= 3) fprintf(stderr, "[bwa_index] Construct SA from BWT and Occ... ");
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "[bwa_index] Construct SA from BWT and Occ... ");
+        }
         bwt = bwt_restore_bwt(str);
         bwt_cal_sa(bwt, 32);
         bwt_dump_sa(str3, bwt);
         bwt_destroy(bwt);
-        if (bwa_verbose >= 3) fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        if (bwa_verbose >= 3) {
+            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+        }
     }
     free(str3);
     free(str2);

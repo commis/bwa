@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/untitled/main.c
+/media/xubing/Workspace/DevelopWork/DevProjects/src/github.com/commis/bwa/untitled/main.c
 stdio.h
 -
 bits/stdint-intn.h
