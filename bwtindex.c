@@ -77,9 +77,7 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     fp = xopen(fn_pac, "rb");
 
     // prepare sequence
-    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0
-        ? 0
-        : 1);
+    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0 ? 0 : 1);
     buf2 = (ubyte_t *) calloc(pac_size, 1);
     err_fread_noeof(buf2, 1, pac_size, fp);
     err_fclose(fp);
@@ -95,7 +93,7 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     }
     free(buf2);
 
-    // Burrows-Wheeler Transform
+    // Burrows-Wheeler Transform, BWT转换算法的实现
     if (use_is) {
         bwt->primary = is_bwt(buf, bwt->seq_len);
     } else {
@@ -136,10 +134,8 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     return bwt;
 }
 
-int bwa_pac2bwt(
-    int argc,
-    char *argv[]) // the "pac2bwt" command; IMPORTANT: bwt generated at this step CANNOT be used with BWA. bwtupdate is required!
-{
+// the "pac2bwt" command; IMPORTANT: bwt generated at this step CANNOT be used with BWA. bwtupdate is required!
+int bwa_pac2bwt(int argc, char *argv[]) {
     bwt_t *bwt;
     int c, use_is = 1;
     while ((c = getopt(argc, argv, "d")) >= 0) {
@@ -227,8 +223,9 @@ int bwa_bwt2sa(int argc, char *argv[]) // the "bwt2sa" command
     return 0;
 }
 
-int bwa_index(int argc, char *argv[]) // the "index" command
-{
+// the "index" command
+int bwa_index(int argc, char *argv[]) {
+    //block_size 默认10M
     int c, algo_type = BWTALGO_AUTO, is_64 = 0, block_size = 10000000;
     char *prefix = 0, *str;
     while ((c = getopt(argc, argv, "6a:p:b:")) >= 0) {
@@ -292,7 +289,7 @@ int bwa_index(int argc, char *argv[]) // the "index" command
 // 构建FM-Index文件
 int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_size) {
 
-    char *str, *str2, *str3;
+    char *str, *str2, *str3; //str输出pac的文件名，str3输出bwt的文件名
     clock_t t;
     int64_t l_pac;
 
@@ -314,9 +311,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
     }
 
     if (algo_type == 0) {
-        algo_type = l_pac > 50000000
-            ? 2
-            : 3;
+        algo_type = l_pac > 50000000 ? 2 : 3;
     } // set the algorithm for generating BWT
     {
         strcpy(str, prefix);

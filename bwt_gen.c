@@ -100,8 +100,7 @@ typedef struct BWTInc {
     unsigned int *packedShift;
 } BWTInc;
 
-static bgint_t TextLengthFromBytePacked(bgint_t bytePackedLength, unsigned int bitPerChar,
-                                        unsigned int lastByteLength) {
+static bgint_t TextLengthFromBytePacked(bgint_t bytePackedLength, unsigned int bitPerChar, unsigned int lastByteLength) {
     return (bytePackedLength - 1) * (BITS_IN_BYTE / bitPerChar) + lastByteLength;
 }
 
@@ -131,7 +130,6 @@ static void GenerateDNAOccCountTable(unsigned int *dnaDecodeTable) {
             c >>= 2;
         }
     }
-
 }
 
 // for BWTIncCreate()
@@ -190,8 +188,9 @@ static void BWTIncSetBuildSizeAndTextAddr(BWTInc *bwtInc) {
         } else {
             bwtInc->buildSize = maxBuildSize;
         }
-        if (bwtInc->buildSize < CHAR_PER_WORD)
+        if (bwtInc->buildSize < CHAR_PER_WORD) {
             bwtInc->buildSize = CHAR_PER_WORD;
+        }
     }
 
     if (bwtInc->buildSize < CHAR_PER_WORD) {
@@ -208,21 +207,29 @@ static void BWTIncSetBuildSizeAndTextAddr(BWTInc *bwtInc) {
 // for ceilLog2()
 unsigned int leadingZero(const unsigned int input) {
     unsigned int l;
-    const static unsigned int leadingZero8bit[256] = {8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    const static unsigned int leadingZero8bit[256] = {8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                                                      3, 3, 3, 3,
                                                       3, 3, 3,
-                                                      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                                      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                                      2, 2, 2, 2,
                                                       2, 2, 2,
-                                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                                      1, 1, 1, 1,
                                                       1, 1, 1,
-                                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                                      1, 1, 1, 1,
                                                       1, 1, 1,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0,
                                                       0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0,
                                                       0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0,
                                                       0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                      0, 0, 0, 0,
                                                       0, 0, 0};
 
     if (input & 0xFFFF0000) {
@@ -244,7 +251,9 @@ unsigned int leadingZero(const unsigned int input) {
 
 // for BitPerBytePackedChar()
 static unsigned int ceilLog2(const unsigned int input) {
-    if (input <= 1) return 0;
+    if (input <= 1) {
+        return 0;
+    }
     return BITS_IN_WORD - leadingZero(input - 1);
 
 }
@@ -254,8 +263,9 @@ static unsigned int BitPerBytePackedChar(const unsigned int alphabetSize) {
     unsigned int bitPerChar;
     bitPerChar = ceilLog2(alphabetSize);
     // Return the largest number of bit that does not affect packing efficiency
-    if (BITS_IN_BYTE / (BITS_IN_BYTE / bitPerChar) > bitPerChar)
+    if (BITS_IN_BYTE / (BITS_IN_BYTE / bitPerChar) > bitPerChar) {
         bitPerChar = BITS_IN_BYTE / (BITS_IN_BYTE / bitPerChar);
+    }
     return bitPerChar;
 }
 
@@ -264,8 +274,9 @@ static unsigned int BitPerWordPackedChar(const unsigned int alphabetSize) {
     return ceilLog2(alphabetSize);
 }
 
-static void ConvertBytePackedToWordPacked(const unsigned char *input, unsigned int *output, const unsigned int alphabetSize,
-                                          const bgint_t textLength) {
+static void ConvertBytePackedToWordPacked(
+    const unsigned char *input, unsigned int *output, const unsigned int alphabetSize,
+    const bgint_t textLength) {
     bgint_t i;
     unsigned int j, k, c;
     unsigned int bitPerBytePackedChar;
@@ -358,12 +369,17 @@ BWT *BWTCreate(const bgint_t textLength, unsigned int *decodeTable) {
     return bwt;
 }
 
+//创建bwt
 BWTInc *BWTIncCreate(const bgint_t textLength, unsigned int initialMaxBuildSize, unsigned int incMaxBuildSize) {
     BWTInc *bwtInc;
     unsigned int i, n_iter;
 
-    if (textLength < incMaxBuildSize) incMaxBuildSize = textLength;
-    if (textLength < initialMaxBuildSize) initialMaxBuildSize = textLength;
+    if (textLength < incMaxBuildSize) {
+        incMaxBuildSize = textLength;
+    }
+    if (textLength < initialMaxBuildSize) {
+        initialMaxBuildSize = textLength;
+    }
 
     bwtInc = (BWTInc *) calloc(1, sizeof(BWTInc));
     bwtInc->numberOfIterationDone = 0;
@@ -375,15 +391,18 @@ BWTInc *BWTIncCreate(const bgint_t textLength, unsigned int initialMaxBuildSize,
 
     // Build frequently accessed data
     bwtInc->packedShift = (unsigned *) calloc(CHAR_PER_WORD, sizeof(unsigned int));
-    for (i = 0; i < CHAR_PER_WORD; i++)
+    for (i = 0; i < CHAR_PER_WORD; i++) {
         bwtInc->packedShift[i] = BITS_IN_WORD - (i + 1) * BIT_PER_CHAR;
+    }
 
     n_iter = (textLength - initialMaxBuildSize) / incMaxBuildSize + 1;
-    bwtInc->availableWord = BWTResidentSizeInWord(textLength) + BWTOccValueMinorSizeInWord(textLength) // minimal memory requirement
+    bwtInc->availableWord = BWTResidentSizeInWord(textLength) + BWTOccValueMinorSizeInWord(
+        textLength) // minimal memory requirement
                             + OCC_INTERVAL / BIT_PER_CHAR * n_iter * 2 * (sizeof(bgint_t) / 4) // buffer at the end of occ array
                             + incMaxBuildSize / 5 * 3 * (sizeof(bgint_t) / 4); // space for the 3 temporary arrays in each iteration
-    if (bwtInc->availableWord < MIN_AVAILABLE_WORD)
-        bwtInc->availableWord = MIN_AVAILABLE_WORD; // lh3: otherwise segfaul when availableWord is too small
+    if (bwtInc->availableWord < MIN_AVAILABLE_WORD) {
+        bwtInc->availableWord = MIN_AVAILABLE_WORD;
+    } // lh3: otherwise segfaul when availableWord is too small
     fprintf(stderr, "[%s] textLength=%ld, availableWord=%ld\n", __func__, (long) textLength, (long) bwtInc->availableWord);
     bwtInc->workingMemory = (unsigned *) calloc(bwtInc->availableWord, BYTES_IN_WORD);
 
@@ -391,8 +410,9 @@ BWTInc *BWTIncCreate(const bgint_t textLength, unsigned int initialMaxBuildSize,
 }
 
 // for BWTIncConstruct()
-static void BWTIncPutPackedTextToRank(const unsigned int *packedText, bgint_t *__restrict rank,
-                                      bgint_t *__restrict cumulativeCount, const bgint_t numChar) {
+static void BWTIncPutPackedTextToRank(
+    const unsigned int *packedText, bgint_t *__restrict rank,
+    bgint_t *__restrict cumulativeCount, const bgint_t numChar) {
     bgint_t i;
     unsigned int j;
     unsigned int c, t;
@@ -434,8 +454,9 @@ static void BWTIncPutPackedTextToRank(const unsigned int *packedText, bgint_t *_
 }
 
 
-static void ForwardDNAAllOccCountNoLimit(const unsigned int *dna, const bgint_t index,
-                                         bgint_t *__restrict occCount, const unsigned int *dnaDecodeTable) {
+static void ForwardDNAAllOccCountNoLimit(
+    const unsigned int *dna, const bgint_t index,
+    bgint_t *__restrict occCount, const unsigned int *dnaDecodeTable) {
     static const unsigned int truncateRightMask[16] = {0x00000000, 0xC0000000, 0xF0000000, 0xFC000000,
                                                        0xFF000000, 0xFFC00000, 0xFFF00000, 0xFFFC0000,
                                                        0xFFFF0000, 0xFFFFC000, 0xFFFFF000, 0xFFFFFC00,
@@ -512,8 +533,9 @@ static void ForwardDNAAllOccCountNoLimit(const unsigned int *dna, const bgint_t 
     occCount[3] += sum;
 }
 
-static void BWTIncBuildPackedBwt(const bgint_t *relativeRank, unsigned int *__restrict bwt, const bgint_t numChar,
-                                 const bgint_t *cumulativeCount, const unsigned int *packedShift) {
+static void BWTIncBuildPackedBwt(
+    const bgint_t *relativeRank, unsigned int *__restrict bwt, const bgint_t numChar,
+    const bgint_t *cumulativeCount, const unsigned int *packedShift) {
 
     bgint_t i, r;
     unsigned int c;
@@ -544,8 +566,9 @@ static void BWTIncBuildPackedBwt(const bgint_t *relativeRank, unsigned int *__re
     }
 }
 
-static inline bgint_t BWTOccValueExplicit(const BWT *bwt, const bgint_t occIndexExplicit,
-                                          const unsigned int character) {
+static inline bgint_t BWTOccValueExplicit(
+    const BWT *bwt, const bgint_t occIndexExplicit,
+    const unsigned int character) {
     bgint_t occIndexMajor;
 
     occIndexMajor = occIndexExplicit * OCC_INTERVAL / OCC_INTERVAL_MAJOR;
@@ -561,8 +584,9 @@ static inline bgint_t BWTOccValueExplicit(const BWT *bwt, const bgint_t occIndex
 }
 
 
-static unsigned int ForwardDNAOccCount(const unsigned int *dna, const unsigned int index, const unsigned int character,
-                                       const unsigned int *dnaDecodeTable) {
+static unsigned int ForwardDNAOccCount(
+    const unsigned int *dna, const unsigned int index, const unsigned int character,
+    const unsigned int *dnaDecodeTable) {
     static const unsigned int truncateRightMask[16] = {0x00000000, 0xC0000000, 0xF0000000, 0xFC000000,
                                                        0xFF000000, 0xFFC00000, 0xFFF00000, 0xFFFC0000,
                                                        0xFFFF0000, 0xFFFFC000, 0xFFFFF000, 0xFFFFFC00,
@@ -591,8 +615,9 @@ static unsigned int ForwardDNAOccCount(const unsigned int *dna, const unsigned i
 
 }
 
-static unsigned int BackwardDNAOccCount(const unsigned int *dna, const unsigned int index, const unsigned int character,
-                                        const unsigned int *dnaDecodeTable) {
+static unsigned int BackwardDNAOccCount(
+    const unsigned int *dna, const unsigned int index, const unsigned int character,
+    const unsigned int *dnaDecodeTable) {
     static const unsigned int truncateLeftMask[16] = {0x00000000, 0x00000003, 0x0000000F, 0x0000003F,
                                                       0x000000FF, 0x000003FF, 0x00000FFF, 0x00003FFF,
                                                       0x0000FFFF, 0x0003FFFF, 0x000FFFFF, 0x003FFFFF,
@@ -630,26 +655,31 @@ bgint_t BWTOccValue(const BWT *bwt, bgint_t index, const unsigned int character)
 
     // $ is supposed to be positioned at inverseSa0 but it is not encoded
     // therefore index is subtracted by 1 for adjustment
-    if (index > bwt->inverseSa0)
+    if (index > bwt->inverseSa0) {
         index--;
+    }
 
     occExplicitIndex = (index + OCC_INTERVAL / 2 - 1) / OCC_INTERVAL;    // Bidirectional encoding
     occIndex = occExplicitIndex * OCC_INTERVAL;
     occValue = BWTOccValueExplicit(bwt, occExplicitIndex, character);
 
-    if (occIndex == index)
+    if (occIndex == index) {
         return occValue;
+    }
 
     if (occIndex < index) {
-        return occValue + ForwardDNAOccCount(bwt->bwtCode + occIndex / CHAR_PER_WORD, index - occIndex, character, bwt->decodeTable);
+        return occValue + ForwardDNAOccCount(bwt->bwtCode + occIndex / CHAR_PER_WORD, index - occIndex, character,
+            bwt->decodeTable);
     } else {
-        return occValue - BackwardDNAOccCount(bwt->bwtCode + occIndex / CHAR_PER_WORD, occIndex - index, character, bwt->decodeTable);
+        return occValue - BackwardDNAOccCount(bwt->bwtCode + occIndex / CHAR_PER_WORD, occIndex - index, character,
+            bwt->decodeTable);
     }
 }
 
-static bgint_t BWTIncGetAbsoluteRank(BWT *bwt, bgint_t *__restrict absoluteRank, bgint_t *__restrict seq,
-                                     const unsigned int *packedText, const bgint_t numChar,
-                                     const bgint_t *cumulativeCount, const unsigned int firstCharInLastIteration) {
+static bgint_t BWTIncGetAbsoluteRank(
+    BWT *bwt, bgint_t *__restrict absoluteRank, bgint_t *__restrict seq,
+    const unsigned int *packedText, const bgint_t numChar,
+    const bgint_t *cumulativeCount, const unsigned int firstCharInLastIteration) {
     bgint_t saIndex;
     bgint_t lastWord;
     unsigned int packedMask;
@@ -709,7 +739,9 @@ static void BWTIncSortKey(bgint_t *__restrict key, bgint_t *__restrict seq, cons
     bgint_t tempSeq, tempKey;
     int64_t numberOfEqualKey;
 
-    if (numItem < 2) return;
+    if (numItem < 2) {
+        return;
+    }
 
     stackDepth = 0;
 
@@ -870,14 +902,17 @@ static void BWTIncSortKey(bgint_t *__restrict key, bgint_t *__restrict seq, cons
             lowIndex = lowStack[stackDepth];
             highIndex = highStack[stackDepth];
             continue;
-        } else return;
+        } else {
+            return;
+        }
     }
 }
 
 
-static void BWTIncBuildRelativeRank(bgint_t *__restrict sortedRank, bgint_t *__restrict seq,
-                                    bgint_t *__restrict relativeRank, const bgint_t numItem,
-                                    bgint_t oldInverseSa0, const bgint_t *cumulativeCount) {
+static void BWTIncBuildRelativeRank(
+    bgint_t *__restrict sortedRank, bgint_t *__restrict seq,
+    bgint_t *__restrict relativeRank, const bgint_t numItem,
+    bgint_t oldInverseSa0, const bgint_t *cumulativeCount) {
     bgint_t i, c;
     bgint_t s, r;
     bgint_t lastRank, lastIndex;
@@ -902,12 +937,14 @@ static void BWTIncBuildRelativeRank(bgint_t *__restrict sortedRank, bgint_t *__r
 
     for (i = numItem; i--;) {    // from numItem - 1 to 0
         r = sortedRank[i];
-        if (r > oldInverseSa0)
-            sortedRank[i]--;    // to prepare for merging; $ is not encoded in bwt
+        if (r > oldInverseSa0) {
+            sortedRank[i]--;
+        }    // to prepare for merging; $ is not encoded in bwt
         s = seq[i];
         if (i < freq) {
-            if (lastIndex >= freq)
-                lastRank++;    // to trigger the group across alphabet boundary to be split
+            if (lastIndex >= freq) {
+                lastRank++;
+            }    // to trigger the group across alphabet boundary to be split
             c--;
             freq = cumulativeCount[c];
         }
@@ -934,8 +971,9 @@ static void BWTIncBuildRelativeRank(bgint_t *__restrict sortedRank, bgint_t *__r
 
 }
 
-static void BWTIncBuildBwt(unsigned int *insertBwt, const bgint_t *relativeRank, const bgint_t numChar,
-                           const bgint_t *cumulativeCount) {
+static void BWTIncBuildBwt(
+    unsigned int *insertBwt, const bgint_t *relativeRank, const bgint_t numChar,
+    const bgint_t *cumulativeCount) {
     unsigned int c;
     bgint_t i;
     bgint_t previousRank, currentRank;
@@ -951,8 +989,9 @@ static void BWTIncBuildBwt(unsigned int *insertBwt, const bgint_t *relativeRank,
     }
 }
 
-static void BWTIncMergeBwt(const bgint_t *sortedRank, const unsigned int *oldBwt, const unsigned int *insertBwt,
-                           unsigned int *__restrict mergedBwt, const bgint_t numOldBwt, const bgint_t numInsertBwt) {
+static void BWTIncMergeBwt(
+    const bgint_t *sortedRank, const unsigned int *oldBwt, const unsigned int *insertBwt,
+    unsigned int *__restrict mergedBwt, const bgint_t numOldBwt, const bgint_t numInsertBwt) {
     unsigned int bitsInWordMinusBitPerChar;
     bgint_t leftShift, rightShift;
     bgint_t o;
@@ -1086,9 +1125,10 @@ void BWTClearTrailingBwtCode(BWT *bwt) {
 }
 
 
-void BWTGenerateOccValueFromBwt(const unsigned int *bwt, unsigned int *__restrict occValue,
-                                bgint_t *__restrict occValueMajor,
-                                const bgint_t textLength, const unsigned int *decodeTable) {
+void BWTGenerateOccValueFromBwt(
+    const unsigned int *bwt, unsigned int *__restrict occValue,
+    bgint_t *__restrict occValueMajor,
+    const bgint_t textLength, const unsigned int *decodeTable) {
     bgint_t numberOfOccValueMajor, numberOfOccValue;
     unsigned int wordBetweenOccValue;
     bgint_t numberOfOccIntervalPerMajor;
@@ -1370,7 +1410,8 @@ static void BWTIncConstruct(BWTInc *bwtInc, const bgint_t numChar) {
         firstCharInThisIteration = bwtInc->packedText[0] >> (BITS_IN_WORD - BIT_PER_CHAR);
 
         // Count occurrence of input text
-        ForwardDNAAllOccCountNoLimit(bwtInc->packedText, numChar, bwtInc->cumulativeCountInCurrentBuild + 1, bwtInc->bwt->decodeTable);
+        ForwardDNAAllOccCountNoLimit(bwtInc->packedText, numChar, bwtInc->cumulativeCountInCurrentBuild + 1,
+            bwtInc->bwt->decodeTable);
         // Add the first character of the previous iteration to represent the inverseSa0 of the previous iteration
         bwtInc->cumulativeCountInCurrentBuild[bwtInc->firstCharInLastIteration + 1]++;
         bwtInc->cumulativeCountInCurrentBuild[2] += bwtInc->cumulativeCountInCurrentBuild[1];
@@ -1381,29 +1422,32 @@ static void BWTIncConstruct(BWTInc *bwtInc, const bgint_t numChar) {
         // The seq array is built into ALPHABET_SIZE + 2 groups; ALPHABET_SIZE groups + 1 group divided into 2 by inverseSa0 + inverseSa0 as 1 group
         // ->packedText is not used any more and will be overwritten by relativeRank
         oldInverseSa0RelativeRank = BWTIncGetAbsoluteRank(bwtInc->bwt, sortedRank, seq, bwtInc->packedText,
-                                                          numChar, bwtInc->cumulativeCountInCurrentBuild, bwtInc->firstCharInLastIteration);
+            numChar, bwtInc->cumulativeCountInCurrentBuild, bwtInc->firstCharInLastIteration);
 
         // Sort rank by ALPHABET_SIZE + 2 groups (or ALPHABET_SIZE + 1 groups when inverseSa0 sit on the border of a group)
         for (i = 0; i < ALPHABET_SIZE; i++) {
             if (bwtInc->cumulativeCountInCurrentBuild[i] > oldInverseSa0RelativeRank ||
                 bwtInc->cumulativeCountInCurrentBuild[i + 1] <= oldInverseSa0RelativeRank) {
-                BWTIncSortKey(sortedRank + bwtInc->cumulativeCountInCurrentBuild[i], seq + bwtInc->cumulativeCountInCurrentBuild[i],
-                              bwtInc->cumulativeCountInCurrentBuild[i + 1] - bwtInc->cumulativeCountInCurrentBuild[i]);
+                BWTIncSortKey(sortedRank + bwtInc->cumulativeCountInCurrentBuild[i],
+                    seq + bwtInc->cumulativeCountInCurrentBuild[i],
+                    bwtInc->cumulativeCountInCurrentBuild[i + 1] - bwtInc->cumulativeCountInCurrentBuild[i]);
             } else {
                 if (bwtInc->cumulativeCountInCurrentBuild[i] < oldInverseSa0RelativeRank) {
-                    BWTIncSortKey(sortedRank + bwtInc->cumulativeCountInCurrentBuild[i], seq + bwtInc->cumulativeCountInCurrentBuild[i],
-                                  oldInverseSa0RelativeRank - bwtInc->cumulativeCountInCurrentBuild[i]);
+                    BWTIncSortKey(sortedRank + bwtInc->cumulativeCountInCurrentBuild[i],
+                        seq + bwtInc->cumulativeCountInCurrentBuild[i],
+                        oldInverseSa0RelativeRank - bwtInc->cumulativeCountInCurrentBuild[i]);
                 }
                 if (bwtInc->cumulativeCountInCurrentBuild[i + 1] > oldInverseSa0RelativeRank + 1) {
                     BWTIncSortKey(sortedRank + oldInverseSa0RelativeRank + 1, seq + oldInverseSa0RelativeRank + 1,
-                                  bwtInc->cumulativeCountInCurrentBuild[i + 1] - oldInverseSa0RelativeRank - 1);
+                        bwtInc->cumulativeCountInCurrentBuild[i + 1] - oldInverseSa0RelativeRank - 1);
                 }
             }
         }
 
         // build relative rank; sortedRank is updated for merging to cater for the fact that $ is not encoded in bwt
         // the cumulative freq information is used to make sure that inverseSa0 and suffix beginning with different characters are kept in different unsorted groups)
-        BWTIncBuildRelativeRank(sortedRank, seq, relativeRank, numChar, bwtInc->bwt->inverseSa0, bwtInc->cumulativeCountInCurrentBuild);
+        BWTIncBuildRelativeRank(sortedRank, seq, relativeRank, numChar, bwtInc->bwt->inverseSa0,
+            bwtInc->cumulativeCountInCurrentBuild);
         assert(relativeRank[numChar] == oldInverseSa0RelativeRank);
 
         // Sort suffix
@@ -1436,7 +1480,7 @@ static void BWTIncConstruct(BWTInc *bwtInc, const bgint_t numChar) {
 
     BWTClearTrailingBwtCode(bwtInc->bwt);
     BWTGenerateOccValueFromBwt(bwtInc->bwt->bwtCode, bwtInc->bwt->occValue, bwtInc->bwt->occValueMajor,
-                               bwtInc->bwt->textLength, bwtInc->bwt->decodeTable);
+        bwtInc->bwt->textLength, bwtInc->bwt->decodeTable);
 
     bwtInc->bwt->inverseSa0 = newInverseSa0;
 
@@ -1453,6 +1497,7 @@ static void BWTIncConstruct(BWTInc *bwtInc, const bgint_t numChar) {
 
 }
 
+//读取pac文件，并根据pac数据构建bwt数据
 BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxBuildSize, bgint_t incMaxBuildSize) {
 
     FILE *packedFile;
@@ -1467,29 +1512,25 @@ BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxB
     packedFile = (FILE *) fopen(inputFileName, "rb");
 
     if (packedFile == NULL) {
-        fprintf(stderr, "BWTIncConstructFromPacked() : Cannot open %s : %s\n",
-                inputFileName, strerror(errno));
+        fprintf(stderr, "BWTIncConstructFromPacked() : Cannot open %s : %s\n", inputFileName, strerror(errno));
         exit(1);
     }
 
     if (fseek(packedFile, -1, SEEK_END) != 0) {
-        fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n",
-                inputFileName, strerror(errno));
+        fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n", inputFileName, strerror(errno));
         exit(1);
     }
     packedFileLen = ftell(packedFile);
     if (packedFileLen == -1) {
-        fprintf(stderr, "BWTIncConstructFromPacked() : Can't ftell on %s : %s\n",
-                inputFileName, strerror(errno));
+        fprintf(stderr, "BWTIncConstructFromPacked() : Can't ftell on %s : %s\n", inputFileName, strerror(errno));
         exit(1);
     }
     if (fread(&lastByteLength, sizeof(unsigned char), 1, packedFile) != 1) {
-        fprintf(stderr,
-                "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
-                inputFileName,
-                ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
+        fprintf(stderr, "BWTIncConstructFromPacked() : Can't read from %s : %s\n", inputFileName,
+            ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
         exit(1);
     }
+    //获取pac数据字符长度
     totalTextLength = TextLengthFromBytePacked(packedFileLen, BIT_PER_CHAR, lastByteLength);
 
     bwtInc = BWTIncCreate(totalTextLength, initialMaxBuildSize, incMaxBuildSize);
@@ -1505,19 +1546,19 @@ BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxB
 
     if (fseek(packedFile, -((long) textSizeInByte + 2), SEEK_CUR) != 0) {
         fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n",
-                inputFileName, strerror(errno));
+            inputFileName, strerror(errno));
         exit(1);
     }
     if (fread(bwtInc->textBuffer, sizeof(unsigned char), textSizeInByte + 1, packedFile) != textSizeInByte + 1) {
         fprintf(stderr,
-                "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
-                inputFileName,
-                ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
+            "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
+            inputFileName,
+            ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
         exit(1);
     }
     if (fseek(packedFile, -((long) textSizeInByte + 1), SEEK_CUR) != 0) {
         fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n",
-                inputFileName, strerror(errno));
+            inputFileName, strerror(errno));
         exit(1);
     }
 
@@ -1534,19 +1575,19 @@ BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxB
         textSizeInByte = textToLoad / CHAR_PER_BYTE;
         if (fseek(packedFile, -((long) textSizeInByte), SEEK_CUR) != 0) {
             fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n",
-                    inputFileName, strerror(errno));
+                inputFileName, strerror(errno));
             exit(1);
         }
         if (fread(bwtInc->textBuffer, sizeof(unsigned char), textSizeInByte, packedFile) != textSizeInByte) {
             fprintf(stderr,
-                    "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
-                    inputFileName,
-                    ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
+                "BWTIncConstructFromPacked() : Can't read from %s : %s\n",
+                inputFileName,
+                ferror(packedFile) ? strerror(errno) : "Unexpected end of file");
             exit(1);
         }
         if (fseek(packedFile, -((long) textSizeInByte), SEEK_CUR) != 0) {
             fprintf(stderr, "BWTIncConstructFromPacked() : Can't seek on %s : %s\n",
-                    inputFileName, strerror(errno));
+                inputFileName, strerror(errno));
             exit(1);
         }
         ConvertBytePackedToWordPacked(bwtInc->textBuffer, bwtInc->packedText, ALPHABET_SIZE, textToLoad);
@@ -1554,7 +1595,7 @@ BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxB
         processedTextLength += textToLoad;
         if (bwtInc->numberOfIterationDone % 10 == 0) {
             fprintf(stderr, "[BWTIncConstructFromPacked] %lu iterations done. %lu characters processed.\n",
-                    (long) bwtInc->numberOfIterationDone, (long) processedTextLength);
+                (long) bwtInc->numberOfIterationDone, (long) processedTextLength);
         }
     }
 
@@ -1563,7 +1604,9 @@ BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxB
 }
 
 void BWTIncFree(BWTInc *bwtInc) {
-    if (bwtInc == 0) return;
+    if (bwtInc == 0) {
+        return;
+    }
     free(bwtInc->bwt->cumulativeFreq);
     free(bwtInc->bwt->occValueMajor);
     free(bwtInc->bwt->decodeTable);
@@ -1579,37 +1622,32 @@ static bgint_t BWTFileSizeInWord(const bgint_t numChar) {
     return (numChar + CHAR_PER_WORD - 1) / CHAR_PER_WORD;
 }
 
+//保存bwt数据到bwt文件
 void BWTSaveBwtCodeAndOcc(const BWT *bwt, const char *bwtFileName, const char *occValueFileName) {
     FILE *bwtFile;
-/*	FILE *occValueFile; */
     bgint_t bwtLength;
 
     bwtFile = (FILE *) fopen(bwtFileName, "wb");
     if (bwtFile == NULL) {
-        fprintf(stderr,
-                "BWTSaveBwtCodeAndOcc(): Cannot open %s for writing: %s\n",
-                bwtFileName, strerror(errno));
+        fprintf(stderr, "BWTSaveBwtCodeAndOcc(): Cannot open %s for writing: %s\n", bwtFileName, strerror(errno));
         exit(1);
     }
 
     bwtLength = BWTFileSizeInWord(bwt->textLength);
 
     if (fwrite(&bwt->inverseSa0, sizeof(bgint_t), 1, bwtFile) != 1
-        || fwrite(bwt->cumulativeFreq + 1,
-                  sizeof(bgint_t), ALPHABET_SIZE, bwtFile) != ALPHABET_SIZE
-        || fwrite(bwt->bwtCode,
-                  sizeof(unsigned int), bwtLength, bwtFile) != bwtLength) {
-        fprintf(stderr, "BWTSaveBwtCodeAndOcc(): Error writing to %s : %s\n",
-                bwtFileName, strerror(errno));
+        || fwrite(bwt->cumulativeFreq + 1, sizeof(bgint_t), ALPHABET_SIZE, bwtFile) != ALPHABET_SIZE
+        || fwrite(bwt->bwtCode, sizeof(unsigned int), bwtLength, bwtFile) != bwtLength) {
+        fprintf(stderr, "BWTSaveBwtCodeAndOcc(): Error writing to %s : %s\n", bwtFileName, strerror(errno));
         exit(1);
     }
     if (fclose(bwtFile) != 0) {
-        fprintf(stderr, "BWTSaveBwtCodeAndOcc(): Error on closing %s : %s\n",
-                bwtFileName, strerror(errno));
+        fprintf(stderr, "BWTSaveBwtCodeAndOcc(): Error on closing %s : %s\n", bwtFileName, strerror(errno));
         exit(1);
     }
 }
 
+// 从pac文件读取数据后转换为bwt文件
 void bwt_bwtgen2(const char *fn_pac, const char *fn_bwt, int block_size) {
     BWTInc *bwtInc;
     bwtInc = BWTIncConstructFromPacked(fn_pac, block_size, block_size);
@@ -1618,6 +1656,7 @@ void bwt_bwtgen2(const char *fn_pac, const char *fn_bwt, int block_size) {
     BWTIncFree(bwtInc);
 }
 
+// 从pac文件读取数据后转换为bwt文件，默认block_size
 void bwt_bwtgen(const char *fn_pac, const char *fn_bwt) {
     bwt_bwtgen2(fn_pac, fn_bwt, 10000000);
 }

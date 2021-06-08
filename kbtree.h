@@ -36,6 +36,10 @@
 #  include "malloc_wrap.h"
 #endif
 
+/*
+这是b-tree树的节点定义, 使用的是c语言的bit fields
+四个字节，分别is_internal是占一个bit，n占了31个bit
+*/
 typedef struct {
 	int32_t is_internal:1, n:31;
 } kbnode_t;

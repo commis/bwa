@@ -1,10 +1,14 @@
-*.[oa]
-bwa
-test
-test64
+### Intellij CLion ###
+
+**/.idea
+data/*.amb
+data/*.ann
+data/*.bwt
+data/*.pac
+data/*.sa
+data/*.sam
+lib/*.[oa]
+
 .*.swp
 Makefile.bak
 bwamem-lite
-**/.idea
-lib/
-data/*.fna.*

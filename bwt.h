@@ -52,9 +52,9 @@ typedef struct {
 	bwtint_t bwt_size; // size of bwt, about seq_len/4
 	uint32_t *bwt; // BWT
 	// occurance array, separated to two parts
-	uint32_t cnt_table[256];
+	uint32_t cnt_table[256]; //Qcc表
 	// suffix array
-	int sa_intv;
+	int sa_intv; //后缀数组
 	bwtint_t n_sa;
 	bwtint_t *sa;
 } bwt_t;
