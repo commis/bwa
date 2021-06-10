@@ -916,7 +916,7 @@ static void BWTIncBuildRelativeRank(
     bgint_t i, c;
     bgint_t s, r;
     bgint_t lastRank, lastIndex;
-    bgint_t oldInverseSa0RelativeRank = 0;
+    //bgint_t oldInverseSa0RelativeRank = 0;
     bgint_t freq;
 
     lastIndex = numItem;
@@ -927,7 +927,7 @@ static void BWTIncBuildRelativeRank(
     s = seq[numItem];
     relativeRank[s] = numItem;
     if (lastRank == oldInverseSa0) {
-        oldInverseSa0RelativeRank = numItem;
+        //oldInverseSa0RelativeRank = numItem;
         oldInverseSa0++;    // so that this segment of code is not run again
         lastRank++;            // so that oldInverseSa0 become a sorted group with 1 item
     }
@@ -962,7 +962,7 @@ static void BWTIncBuildRelativeRank(
             lastRank = r;
             relativeRank[s] = i;
             if (r == oldInverseSa0) {
-                oldInverseSa0RelativeRank = i;
+                //oldInverseSa0RelativeRank = i;
                 oldInverseSa0++;    // so that this segment of code is not run again
                 lastRank++;            // so that oldInverseSa0 become a sorted group with 1 item
             }
@@ -992,14 +992,14 @@ static void BWTIncBuildBwt(
 static void BWTIncMergeBwt(
     const bgint_t *sortedRank, const unsigned int *oldBwt, const unsigned int *insertBwt,
     unsigned int *__restrict mergedBwt, const bgint_t numOldBwt, const bgint_t numInsertBwt) {
-    unsigned int bitsInWordMinusBitPerChar;
+    //unsigned int bitsInWordMinusBitPerChar;
     bgint_t leftShift, rightShift;
     bgint_t o;
     bgint_t oIndex, iIndex, mIndex;
     bgint_t mWord, mChar, oWord, oChar;
     bgint_t numInsert;
 
-    bitsInWordMinusBitPerChar = BITS_IN_WORD - BIT_PER_CHAR;
+    //bitsInWordMinusBitPerChar = BITS_IN_WORD - BIT_PER_CHAR;
 
     oIndex = 0;
     iIndex = 0;

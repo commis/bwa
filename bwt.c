@@ -518,8 +518,10 @@ bwt_t *bwt_restore_bwt(const char *fn) {
     bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
     fp = xopen(fn, "rb");
     err_fseek(fp, 0, SEEK_END);
+    //刷新bwt的长度后，分配内存空间
     bwt->bwt_size = (err_ftell(fp) - sizeof(bwtint_t) * 5) >> 2;
     bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
+    //重置文件句柄到文件头后读取文件内容
     err_fseek(fp, 0, SEEK_SET);
     err_fread_noeof(&bwt->primary, sizeof(bwtint_t), 1, fp);
     err_fread_noeof(bwt->L2 + 1, sizeof(bwtint_t), 4, fp);

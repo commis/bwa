@@ -47,7 +47,7 @@ KHASH_MAP_INIT_STR(str, int)
 
 #endif
 
-// 为提示效率设计映射表，主要实现A,C,T,G的转换
+// 为提高效率而设计的映射表，用户压缩pac
 /*
 0 1 2 3 4 5
 A C G T * -
@@ -262,7 +262,7 @@ void bns_destroy(bntseq_t *bns) {
     }
 }
 
-// 实现psc的编码和解码, pac用于存放压缩后的碱基信息
+// 实现pac的编码和解码, pac用于存放压缩后的碱基信息
 #define _set_pac(pac, l, c) ((pac)[(l)>>2] |= (c)<<((~(l)&3)<<1))
 #define _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
 
@@ -317,13 +317,13 @@ static uint8_t *add1(const kseq_t *seq, bntseq_t *bns, uint8_t *pac, int64_t *m_
     return pac;
 }
 
-// 将基因原始序列转换成bnt序列
+// 将基因原始序列转换方法，生成pac文件，并返回pac的长度
 int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only) {
 
     kseq_t *seq; //输入参数fp_fa文件内容，映射出来的结构化数据对象
     char name[1024]; //输出的文件名
     bntseq_t *bns;
-    uint8_t *pac = 0;
+    uint8_t *pac = 0; //指针可以当作数组使用
     int32_t m_seqs, m_holes;
     int64_t ret = -1, m_pac, l;
     bntamb1_t *q;

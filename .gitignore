@@ -1,6 +1,7 @@
 ### Intellij CLion ###
-
 **/.idea
+**/cmake-build-debug
+
 data/*.amb
 data/*.ann
 data/*.bwt
@@ -12,3 +13,4 @@ lib/*.[oa]
 .*.swp
 Makefile.bak
 bwamem-lite
+a.out

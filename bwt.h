@@ -50,13 +50,13 @@ typedef struct {
 	bwtint_t L2[5]; // C(), cumulative count
 	bwtint_t seq_len; // sequence length
 	bwtint_t bwt_size; // size of bwt, about seq_len/4
-	uint32_t *bwt; // BWT
+	uint32_t *bwt; // BWT 数据
 	// occurance array, separated to two parts
-	uint32_t cnt_table[256]; //Qcc表
+	uint32_t cnt_table[256]; //记分表
 	// suffix array
 	int sa_intv; //后缀数组
-	bwtint_t n_sa;
-	bwtint_t *sa;
+	bwtint_t n_sa; //sa的长度
+	bwtint_t *sa; //sa数据
 } bwt_t;
 
 typedef struct {

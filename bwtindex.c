@@ -66,18 +66,18 @@ int64_t bwa_seq_len(const char *fn_pac) {
 // 将pac文件的数据转为bwt数据
 bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     bwt_t *bwt;
-    ubyte_t *buf, *buf2; //buf2读取pac数据的缓存区，buf为转换后的bwt数据
-    int64_t i, pac_size; //
+    ubyte_t *buf, *buf2; //buf2读取pac文件的缓存区；buf为pac解码后的缓存区，用做BWT算法的输入数据
+    int64_t i, pac_size; //pac的长度
     FILE *fp;
 
-    // initialization
+    // initialization 初始化各变量
     bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
     bwt->seq_len = bwa_seq_len(fn_pac);
-    bwt->bwt_size = (bwt->seq_len + 15) >> 4;
+    bwt->bwt_size = (bwt->seq_len + 15) >> 4;  //bwt长度，256 = 16*16，即 16*16 的矩阵
     fp = xopen(fn_pac, "rb");
 
     // prepare sequence
-    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0 ? 0 : 1);
+    pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0 ? 0 : 1); //大约为 seq / 4 长度
     buf2 = (ubyte_t *) calloc(pac_size, 1);
     err_fread_noeof(buf2, 1, pac_size, fp);
     err_fclose(fp);
@@ -85,7 +85,9 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     memset(bwt->L2, 0, 5 * 4);
     buf = (ubyte_t *) calloc(bwt->seq_len + 1, 1);
     for (i = 0; i < bwt->seq_len; ++i) {
+        // pac的解码，作用同 _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
         buf[i] = buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
+        // 计算得到buf[i]的值为0~3，及表 nst_nt4_table 中有效碱基的值
         ++bwt->L2[1 + buf[i]];
     }
     for (i = 2; i <= 4; ++i) {
@@ -126,6 +128,7 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
         }
         rope_destroy(r);
     }
+    // 为bwt分配内存空间并计算获得bwt
     bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
     for (i = 0; i < bwt->seq_len; ++i) {
         bwt->bwt[i >> 4] |= buf[i] << ((15 - (i & 15)) << 1);
@@ -310,9 +313,11 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         err_gzclose(fp);
     }
 
+    // set the algorithm for generating BWT
+    // 根据pac的长度选择BWT算法：1-RB2，2-BWTSW，3-IS
     if (algo_type == 0) {
         algo_type = l_pac > 50000000 ? 2 : 3;
-    } // set the algorithm for generating BWT
+    }
     {
         strcpy(str, prefix);
         strcat(str, ".pac");
