@@ -110,6 +110,7 @@ bwaidx_t *bwa_idx_load_from_shm(const char *hint) {
     for (name = hint + strlen(hint) - 1; name >= hint && *name != '/'; --name) {
     }
     ++name;
+    //如果创建打开共享文件失败，就不使用共享文件了，程序照样了工作，我调试阶段本机打开失败
     if ((shmid = shm_open("/bwactl", O_RDONLY, 0)) < 0) {
         return 0;
     }

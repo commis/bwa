@@ -65,6 +65,7 @@ void bwt_cal_sa(bwt_t *bwt, int intv) {
     bwtint_t isa, sa, i; // S(isa) = sa
     int intv_round = intv;
 
+    //检验参数 intv 是否为2的n次幂，一般intv默认为32
     kv_roundup32(intv_round);
     xassert(intv_round == intv, "SA sample interval is not a power of 2.");
     xassert(bwt->bwt, "bwt_t::bwt is not initialized.");
@@ -528,6 +529,7 @@ bwt_t *bwt_restore_bwt(const char *fn) {
     fread_fix(fp, bwt->bwt_size << 2, bwt->bwt);
     bwt->seq_len = bwt->L2[4];
     err_fclose(fp);
+
     bwt_gen_cnt_table(bwt);
 
     return bwt;

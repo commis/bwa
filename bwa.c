@@ -79,6 +79,7 @@ static inline void kseq2bseq1(const kseq_t *ks, bseq1_t *s) { // TODO: it would 
     s->l_seq = ks->seq.l;
 }
 
+//读取待比对基于序列文件的数据
 bseq1_t *bseq_read(int chunk_size, int *n_, void *ks1_, void *ks2_) {
     kseq_t *ks = (kseq_t *) ks1_, *ks2 = (kseq_t *) ks2_;
     int size = 0, m, n;
@@ -509,7 +510,7 @@ int bwa_idx2mem(bwaidx_t *idx) {
 /***********************
  * SAM header routines *
  ***********************/
-
+//打印输出比对结果(sam)头部信息
 void bwa_print_sam_hdr(const bntseq_t *bns, const char *hdr_line) {
     int i, n_SQ = 0;
     extern char *bwa_pg;

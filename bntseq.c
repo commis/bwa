@@ -317,7 +317,7 @@ static uint8_t *add1(const kseq_t *seq, bntseq_t *bns, uint8_t *pac, int64_t *m_
     return pac;
 }
 
-// 将基因原始序列转换方法，生成pac文件，并返回pac的长度
+// 将基因原始序列转换方法，生成pac文件，且pac数据中包含了其反向互补链数据，并返回pac的长度
 int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only) {
 
     kseq_t *seq; //输入参数fp_fa文件内容，映射出来的结构化数据对象
@@ -349,14 +349,15 @@ int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only) {
     }
     // for_only 反向序列标记：0-需要反向序列，1-不需要反向序列
     if (!for_only) { // add the reverse complemented sequence
-        //增加反向序列的长度空间，预留 3 个字节的空间
+        //增加反向互补序列的长度空间，预留 3 个字节的空间
         int64_t ll_pac = (bns->l_pac * 2 + 3) / 4 * 4;
         if (ll_pac > m_pac) {
             pac = realloc(pac, ll_pac / 4);
         }
         memset(pac + (bns->l_pac + 3) / 4, 0, (ll_pac - (bns->l_pac + 3) / 4 * 4) / 4);
-        //对反向序列空间赋值
+        //对反向互补序列赋值
         for (l = bns->l_pac - 1; l >= 0; --l, ++bns->l_pac) {
+            //根据 nst_nt4_table 映射表的数据，实现 A <=> T，C <=> G 的互转
             _set_pac(pac, bns->l_pac, 3 - _get_pac(pac, l));
         }
     }

@@ -46,24 +46,27 @@ typedef unsigned char ubyte_t;
 typedef uint64_t bwtint_t;
 
 typedef struct {
-	bwtint_t primary; // S^{-1}(0), or the primary index of BWT
-	bwtint_t L2[5]; // C(), cumulative count
-	bwtint_t seq_len; // sequence length
-	bwtint_t bwt_size; // size of bwt, about seq_len/4
-	uint32_t *bwt; // BWT 数据
-	// occurance array, separated to two parts
-	uint32_t cnt_table[256]; //记分表
-	// suffix array
-	int sa_intv; //后缀数组
-	bwtint_t n_sa; //sa的长度
-	bwtint_t *sa; //sa数据
+    bwtint_t primary; // S^{-1}(0), or the primary index of BWT
+    bwtint_t L2[5]; // C(), cumulative count
+    bwtint_t seq_len; // sequence length
+    bwtint_t bwt_size; // size of bwt, about seq_len/4
+    uint32_t *bwt; // BWT 数据
+    // occurance array, separated to two parts
+    uint32_t cnt_table[256]; //记分表
+    // suffix array
+    int sa_intv; //分组大小，必须为2的n次幂
+    bwtint_t n_sa; //sa的长度
+    bwtint_t *sa; //后缀数组的数据，即基因字符在原始序列中的位置
 } bwt_t;
 
 typedef struct {
-	bwtint_t x[3], info;
+    bwtint_t x[3], info;
 } bwtintv_t;
 
-typedef struct { size_t n, m; bwtintv_t *a; } bwtintv_v;
+typedef struct {
+    size_t n, m;
+    bwtintv_t *a;
+} bwtintv_v;
 
 /* For general OCC_INTERVAL, the following is correct:
 #define bwt_bwt(b, k) ((b)->bwt[(k)/OCC_INTERVAL * (OCC_INTERVAL/(sizeof(uint32_t)*8/2) + sizeof(bwtint_t)/4*4) + sizeof(bwtint_t)/4*4 + (k)%OCC_INTERVAL/16])
@@ -85,45 +88,53 @@ typedef struct { size_t n, m; bwtintv_t *a; } bwtintv_v;
 extern "C" {
 #endif
 
-	void bwt_dump_bwt(const char *fn, const bwt_t *bwt);
-	void bwt_dump_sa(const char *fn, const bwt_t *bwt);
+void bwt_dump_bwt(const char *fn, const bwt_t *bwt);
 
-	bwt_t *bwt_restore_bwt(const char *fn);
-	void bwt_restore_sa(const char *fn, bwt_t *bwt);
+void bwt_dump_sa(const char *fn, const bwt_t *bwt);
 
-	void bwt_destroy(bwt_t *bwt);
+bwt_t *bwt_restore_bwt(const char *fn);
 
-	void bwt_bwtgen(const char *fn_pac, const char *fn_bwt); // from BWT-SW
-	void bwt_bwtgen2(const char *fn_pac, const char *fn_bwt, int block_size); // from BWT-SW
-	void bwt_cal_sa(bwt_t *bwt, int intv);
+void bwt_restore_sa(const char *fn, bwt_t *bwt);
 
-	void bwt_bwtupdate_core(bwt_t *bwt);
+void bwt_destroy(bwt_t *bwt);
 
-	bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c);
-	void bwt_occ4(const bwt_t *bwt, bwtint_t k, bwtint_t cnt[4]);
-	bwtint_t bwt_sa(const bwt_t *bwt, bwtint_t k);
+void bwt_bwtgen(const char *fn_pac, const char *fn_bwt); // from BWT-SW
+void bwt_bwtgen2(const char *fn_pac, const char *fn_bwt, int block_size); // from BWT-SW
+void bwt_cal_sa(bwt_t *bwt, int intv);
 
-	// more efficient version of bwt_occ/bwt_occ4 for retrieving two close Occ values
-	void bwt_gen_cnt_table(bwt_t *bwt);
-	void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok, bwtint_t *ol);
-	void bwt_2occ4(const bwt_t *bwt, bwtint_t k, bwtint_t l, bwtint_t cntk[4], bwtint_t cntl[4]);
+void bwt_bwtupdate_core(bwt_t *bwt);
 
-	int bwt_match_exact(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t *sa_begin, bwtint_t *sa_end);
-	int bwt_match_exact_alt(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t *k0, bwtint_t *l0);
+bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c);
 
-	/**
-	 * Extend bi-SA-interval _ik_
-	 */
-	void bwt_extend(const bwt_t *bwt, const bwtintv_t *ik, bwtintv_t ok[4], int is_back);
+void bwt_occ4(const bwt_t *bwt, bwtint_t k, bwtint_t cnt[4]);
 
-	/**
-	 * Given a query _q_, collect potential SMEMs covering position _x_ and store them in _mem_.
-	 * Return the end of the longest exact match starting from _x_.
-	 */
-	int bwt_smem1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]);
-	int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, uint64_t max_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]);
+bwtint_t bwt_sa(const bwt_t *bwt, bwtint_t k);
 
-	int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_len, int max_intv, bwtintv_t *mem);
+// more efficient version of bwt_occ/bwt_occ4 for retrieving two close Occ values
+void bwt_gen_cnt_table(bwt_t *bwt);
+
+void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok, bwtint_t *ol);
+
+void bwt_2occ4(const bwt_t *bwt, bwtint_t k, bwtint_t l, bwtint_t cntk[4], bwtint_t cntl[4]);
+
+int bwt_match_exact(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t *sa_begin, bwtint_t *sa_end);
+
+int bwt_match_exact_alt(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t *k0, bwtint_t *l0);
+
+/**
+ * Extend bi-SA-interval _ik_
+ */
+void bwt_extend(const bwt_t *bwt, const bwtintv_t *ik, bwtintv_t ok[4], int is_back);
+
+/**
+ * Given a query _q_, collect potential SMEMs covering position _x_ and store them in _mem_.
+ * Return the end of the longest exact match starting from _x_.
+ */
+int bwt_smem1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]);
+
+int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, uint64_t max_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]);
+
+int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_len, int max_intv, bwtintv_t *mem);
 
 #ifdef __cplusplus
 }

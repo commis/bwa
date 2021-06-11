@@ -54,7 +54,7 @@ typedef struct {
     mem_opt_t *opt;
     mem_pestat_t *pes0;
     int64_t n_processed;
-    int copy_comment, actual_chunk_size;
+    int copy_comment, actual_chunk_size; //实际block大小，默认10M
     bwaidx_t *idx;
 } ktp_aux_t;
 
@@ -64,6 +64,7 @@ typedef struct {
     bseq1_t *seqs;
 } ktp_data_t;
 
+//该执行过程的step由kthread.c中的ktp_worker控制
 static void *process(void *shared, int step, void *_data) {
     ktp_aux_t *aux = (ktp_aux_t *) shared;
     ktp_data_t *data = (ktp_data_t *) _data;
@@ -125,9 +126,11 @@ static void *process(void *shared, int step, void *_data) {
         return data;
     } else if (step == 2) {
         for (i = 0; i < data->n_seqs; ++i) {
+            //如果匹配结果不为空，直接输出匹配结果（sam）
             if (data->seqs[i].sam) {
                 err_fputs(data->seqs[i].sam, stdout);
             }
+            //释放比对的序列片段数据
             free(data->seqs[i].name);
             free(data->seqs[i].comment);
             free(data->seqs[i].seq);
@@ -508,6 +511,7 @@ int main_mem(int argc, char *argv[]) {
         }
     }
 
+    //读取待比对的基因序列文件，命令参数中的第二个文件名
     ko = kopen(argv[optind + 1], &fd);
     if (ko == 0) {
         if (bwa_verbose >= 1) {
@@ -523,6 +527,7 @@ int main_mem(int argc, char *argv[]) {
                 fprintf(stderr, "[W::%s] when '-p' is in use, the second query file is ignored.\n", __func__);
             }
         } else {
+            //读取第二个待比对的基因序列文件
             ko2 = kopen(argv[optind + 2], &fd2);
             if (ko2 == 0) {
                 if (bwa_verbose >= 1) {

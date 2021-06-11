@@ -54,7 +54,7 @@ typedef struct {
 } bntamb1_t;
 
 typedef struct {
-    int64_t l_pac;  //处理中pac的长度计数
+    int64_t l_pac;  //pac的长度计数
     int32_t n_seqs; //基因组序列数
     uint32_t seed; //随机数种子
     bntann1_t *anns; // n_seqs elements

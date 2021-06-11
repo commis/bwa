@@ -54,7 +54,7 @@ int is_bwt(ubyte_t *T, int n);
 int64_t bwa_seq_len(const char *fn_pac) {
     FILE *fp;
     int64_t pac_len;
-    ubyte_t c;
+    ubyte_t c; //最后一个字节
     fp = xopen(fn_pac, "rb");
     err_fseek(fp, -1, SEEK_END);
     pac_len = err_ftell(fp);
@@ -72,7 +72,7 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
 
     // initialization 初始化各变量
     bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
-    bwt->seq_len = bwa_seq_len(fn_pac);
+    bwt->seq_len = bwa_seq_len(fn_pac); //从pac文件计算得到序列的长度
     bwt->bwt_size = (bwt->seq_len + 15) >> 4;  //bwt长度，256 = 16*16，即 16*16 的矩阵
     fp = xopen(fn_pac, "rb");
 
@@ -130,7 +130,10 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     }
     // 为bwt分配内存空间并计算获得bwt
     bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
+    //把 seq 中的每256个转换成一个16*16的矩阵，并压缩为bwt的值
     for (i = 0; i < bwt->seq_len; ++i) {
+        // buf[i] << ((15 - (i & 15)) << 1) 即：Burrows Wheeler Transform转换算法中的左移操作
+        // (i & 15) 相当于 i/16
         bwt->bwt[i >> 4] |= buf[i] << ((15 - (i & 15)) << 1);
     }
     free(buf);

@@ -54,6 +54,7 @@ int main() {
 #  include "malloc_wrap.h"
 #endif
 
+// 检验 x 值是否为2的n次幂
 #define kv_roundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
 
 #define kvec_t(type) struct { size_t n, m; type *a; }
