@@ -108,6 +108,7 @@ void bns_dump(const bntseq_t *bns, const char *prefix) {
     }
 }
 
+//加载文件数据，输入参数：相对应的文件名
 bntseq_t *bns_restore_core(const char *ann_filename, const char *amb_filename, const char *pac_filename) {
     char str[8192];
     FILE *fp;
@@ -195,6 +196,7 @@ bntseq_t *bns_restore_core(const char *ann_filename, const char *amb_filename, c
     err_fatal(__func__, "Parse error reading %s\n", fname);
 }
 
+//加载bns数据，输入：prefix-参考基因序列文件名
 bntseq_t *bns_restore(const char *prefix) {
     char ann_filename[1024], amb_filename[1024], pac_filename[1024], alt_filename[1024];
     FILE *fp;
@@ -203,9 +205,7 @@ bntseq_t *bns_restore(const char *prefix) {
     strcat(strcpy(amb_filename, prefix), ".amb");
     strcat(strcpy(pac_filename, prefix), ".pac");
     bns = bns_restore_core(ann_filename, amb_filename, pac_filename);
-    if (bns == 0) {
-        return 0;
-    }
+
     if ((fp = fopen(strcat(strcpy(alt_filename, prefix), ".alt"), "r")) != 0) { // read .alt file if present
         char str[1024];
         khash_t(str) *h;

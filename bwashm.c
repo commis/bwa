@@ -94,7 +94,7 @@ int bwa_shm_stage(bwaidx_t *idx, const char *hint, const char *_tmpfn) {
     return 0;
 }
 
-// 加载FM-Index索引数据文件
+// 读取参考基因序列文件，并输出相应的Index文件
 bwaidx_t *bwa_idx_load_from_shm(const char *hint) {
     const char *name;
     uint8_t *shm, *shm_idx;
@@ -107,9 +107,12 @@ bwaidx_t *bwa_idx_load_from_shm(const char *hint) {
     if (hint == 0 || hint[0] == 0) {
         return 0;
     }
+
+    //得到参考基因序列文件名称
     for (name = hint + strlen(hint) - 1; name >= hint && *name != '/'; --name) {
     }
     ++name;
+
     //如果创建打开共享文件失败，就不使用共享文件了，程序照样了工作，我调试阶段本机打开失败
     if ((shmid = shm_open("/bwactl", O_RDONLY, 0)) < 0) {
         return 0;

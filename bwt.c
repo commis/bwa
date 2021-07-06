@@ -41,6 +41,7 @@
 
 #endif
 
+//打分矩阵(16*16)的初始化
 void bwt_gen_cnt_table(bwt_t *bwt) {
     int i, j;
     for (i = 0; i != 256; ++i) {
@@ -491,6 +492,7 @@ static bwtint_t fread_fix(FILE *fp, bwtint_t size, void *a) { // Mac/Darwin has 
     return offset;
 }
 
+//加载sa文件内容，输入：fn为sa文件名，bwt数据指针
 void bwt_restore_sa(const char *fn, bwt_t *bwt) {
     char skipped[256];
     FILE *fp;
@@ -512,6 +514,7 @@ void bwt_restore_sa(const char *fn, bwt_t *bwt) {
     err_fclose(fp);
 }
 
+//加载bwt数据，fn：bwt文件名
 bwt_t *bwt_restore_bwt(const char *fn) {
     bwt_t *bwt;
     FILE *fp;
@@ -519,7 +522,7 @@ bwt_t *bwt_restore_bwt(const char *fn) {
     bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
     fp = xopen(fn, "rb");
     err_fseek(fp, 0, SEEK_END);
-    //刷新bwt的长度后，分配内存空间
+    //设置bwt数据长度并分配内存空间，size: (length - 40)/4
     bwt->bwt_size = (err_ftell(fp) - sizeof(bwtint_t) * 5) >> 2;
     bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
     //重置文件句柄到文件头后读取文件内容

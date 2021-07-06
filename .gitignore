@@ -1,5 +1,4 @@
 ### Intellij CLion ###
-**/.idea
 **/cmake-build-debug
 
 data/*.amb

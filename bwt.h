@@ -48,9 +48,9 @@ typedef uint64_t bwtint_t;
 typedef struct {
     bwtint_t primary; // S^{-1}(0), or the primary index of BWT
     bwtint_t L2[5]; // C(), cumulative count
-    bwtint_t seq_len; // sequence length
+    bwtint_t seq_len; // sequence length, equal L2[4]
     bwtint_t bwt_size; // size of bwt, about seq_len/4
-    uint32_t *bwt; // BWT 数据
+    uint32_t *bwt; // bwt table
     // occurance array, separated to two parts
     uint32_t cnt_table[256]; //记分表
     // suffix array
