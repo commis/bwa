@@ -91,9 +91,9 @@ typedef struct ktp_t {
 
     int64_t index;
     int n_workers, n_steps;
-    ktp_worker_t *workers;
-    pthread_mutex_t mutex;
-    pthread_cond_t cv;
+    ktp_worker_t *workers; //线程work指针
+    pthread_mutex_t mutex; //线程中的互斥锁
+    pthread_cond_t cv; //线程中的条件变量
 } ktp_t;
 
 static void *ktp_worker(void *data) {

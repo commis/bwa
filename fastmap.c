@@ -190,7 +190,7 @@ int main_mem(int argc, char *argv[]) {
     const char *mode = 0;
     void *ko = 0, *ko2 = 0;
     mem_pestat_t pes[4];
-    ktp_aux_t aux;
+    ktp_aux_t aux; //thread share data
 
     memset(&aux, 0, sizeof(ktp_aux_t));
     memset(pes, 0, 4 * sizeof(mem_pestat_t));
