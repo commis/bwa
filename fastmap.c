@@ -67,8 +67,8 @@ typedef struct {
 //该执行过程的step由kthread.c中的ktp_worker控制，具体业务的执行入口函数
 //函数输入：shared(ktp_aux_t), step, data(ktp_data_t)
 static void *process(void *shared, int step, void *_data) {
-    ktp_aux_t *aux = (ktp_aux_t *) shared;
-    ktp_data_t *data = (ktp_data_t *) _data;
+    ktp_aux_t *aux = (ktp_aux_t *)shared;
+    ktp_data_t *data = (ktp_data_t *)_data;
 
     if (step == 0) {
         ktp_data_t *ret;
@@ -90,7 +90,7 @@ static void *process(void *shared, int step, void *_data) {
             size += ret->seqs[i].l_seq;
         }
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "[M::%s] read %d sequences (%ld bp)...\n", __func__, ret->n_seqs, (long) size);
+            fprintf(stderr, "[M::%s] read %d sequences (%ld bp)...\n", __func__, ret->n_seqs, (long)size);
         }
         return ret;
     } else if (step == 1) {
@@ -102,7 +102,8 @@ static void *process(void *shared, int step, void *_data) {
             mem_opt_t tmp_opt = *opt;
             bseq_classify(data->n_seqs, data->seqs, n_sep, sep);
             if (bwa_verbose >= 3) {
-                fprintf(stderr, "[M::%s] %d single-end sequences; %d paired-end sequences\n", __func__, n_sep[0], n_sep[1]);
+                fprintf(stderr, "[M::%s] %d single-end sequences; %d paired-end sequences\n", __func__, n_sep[0],
+                    n_sep[1]);
             }
             if (n_sep[0]) {
                 tmp_opt.flag &= ~MEM_F_PE;
@@ -113,8 +114,8 @@ static void *process(void *shared, int step, void *_data) {
             }
             if (n_sep[1]) {
                 tmp_opt.flag |= MEM_F_PE;
-                mem_process_seqs(&tmp_opt, idx->bwt, idx->bns, idx->pac, aux->n_processed + n_sep[0], n_sep[1], sep[1],
-                    aux->pes0);
+                mem_process_seqs(&tmp_opt, idx->bwt, idx->bns, idx->pac, aux->n_processed + n_sep[0],
+                    n_sep[1], sep[1], aux->pes0);
                 for (int i = 0; i < n_sep[1]; ++i) {
                     data->seqs[sep[1][i].id].sam = sep[1][i].sam;
                 }
@@ -202,7 +203,8 @@ int main_mem(int argc, char *argv[]) {
 
     aux.opt = opt = mem_opt_init();
     memset(&opt0, 0, sizeof(mem_opt_t));
-    while ((c = getopt(argc, argv, "51qpaMCSPVYjuk:c:v:s:r:t:R:A:B:O:E:U:w:L:d:T:Q:D:m:I:N:o:f:W:x:G:h:y:K:X:H:F:")) >= 0) {
+    while ((c = getopt(argc, argv,
+        "51qpaMCSPVYjuk:c:v:s:r:t:R:A:B:O:E:U:w:L:d:T:Q:D:m:I:N:o:f:W:x:G:h:y:K:X:H:F:")) >= 0) {
         if (c == 'k') {
             opt->min_seed_len = atoi(optarg), opt0.min_seed_len = 1;
         } else if (c == '1') {
@@ -333,16 +335,16 @@ int main_mem(int argc, char *argv[]) {
             if (*p != 0 && ispunct(*p) && isdigit(p[1])) {
                 pes[1].std = strtod(p + 1, &p);
             }
-            pes[1].high = (int) (pes[1].avg + 4. * pes[1].std + .499);
-            pes[1].low = (int) (pes[1].avg - 4. * pes[1].std + .499);
+            pes[1].high = (int)(pes[1].avg + 4. * pes[1].std + .499);
+            pes[1].low = (int)(pes[1].avg - 4. * pes[1].std + .499);
             if (pes[1].low < 1) {
                 pes[1].low = 1;
             }
             if (*p != 0 && ispunct(*p) && isdigit(p[1])) {
-                pes[1].high = (int) (strtod(p + 1, &p) + .499);
+                pes[1].high = (int)(strtod(p + 1, &p) + .499);
             }
             if (*p != 0 && ispunct(*p) && isdigit(p[1])) {
-                pes[1].low = (int) (strtod(p + 1, &p) + .499);
+                pes[1].low = (int)(strtod(p + 1, &p) + .499);
             }
             if (bwa_verbose >= 3) {
                 fprintf(stderr, "[M::%s] mean insert size: %.3f, stddev: %.3f, max: %d, min: %d\n",
@@ -371,41 +373,53 @@ int main_mem(int argc, char *argv[]) {
         fprintf(stderr, "       -d INT        off-diagonal X-dropoff [%d]\n", opt->zdrop);
         fprintf(stderr, "       -r FLOAT      look for internal seeds inside a seed longer than {-k} * FLOAT [%g]\n",
             opt->split_factor);
-        fprintf(stderr, "       -y INT        seed occurrence for the 3rd round seeding [%ld]\n", (long) opt->max_mem_intv);
+        fprintf(stderr, "       -y INT        seed occurrence for the 3rd round seeding [%ld]\n",
+            (long)opt->max_mem_intv);
 //		fprintf(stderr, "       -s INT        look for internal seeds inside a seed with less than INT occ [%d]\n", opt->split_width);
         fprintf(stderr, "       -c INT        skip seeds with more than INT occurrences [%d]\n", opt->max_occ);
-        fprintf(stderr, "       -D FLOAT      drop chains shorter than FLOAT fraction of the longest overlapping chain [%.2f]\n",
+        fprintf(stderr,
+            "       -D FLOAT      drop chains shorter than FLOAT fraction of the longest overlapping chain [%.2f]\n",
             opt->drop_ratio);
         fprintf(stderr, "       -W INT        discard a chain if seeded bases shorter than INT [0]\n");
-        fprintf(stderr, "       -m INT        perform at most INT rounds of mate rescues for each read [%d]\n", opt->max_matesw);
+        fprintf(stderr, "       -m INT        perform at most INT rounds of mate rescues for each read [%d]\n",
+            opt->max_matesw);
         fprintf(stderr, "       -S            skip mate rescue\n");
         fprintf(stderr, "       -P            skip pairing; mate rescue performed unless -S also in use\n");
         fprintf(stderr, "\nScoring options:\n\n");
-        fprintf(stderr, "       -A INT        score for a sequence match, which scales options -TdBOELU unless overridden [%d]\n",
+        fprintf(stderr,
+            "       -A INT        score for a sequence match, which scales options -TdBOELU unless overridden [%d]\n",
             opt->a);
         fprintf(stderr, "       -B INT        penalty for a mismatch [%d]\n", opt->b);
-        fprintf(stderr, "       -O INT[,INT]  gap open penalties for deletions and insertions [%d,%d]\n", opt->o_del, opt->o_ins);
-        fprintf(stderr, "       -E INT[,INT]  gap extension penalty; a gap of size k cost '{-O} + {-E}*k' [%d,%d]\n", opt->e_del,
+        fprintf(stderr, "       -O INT[,INT]  gap open penalties for deletions and insertions [%d,%d]\n", opt->o_del,
+            opt->o_ins);
+        fprintf(stderr, "       -E INT[,INT]  gap extension penalty; a gap of size k cost '{-O} + {-E}*k' [%d,%d]\n",
+            opt->e_del,
             opt->e_ins);
-        fprintf(stderr, "       -L INT[,INT]  penalty for 5'- and 3'-end clipping [%d,%d]\n", opt->pen_clip5, opt->pen_clip3);
+        fprintf(stderr, "       -L INT[,INT]  penalty for 5'- and 3'-end clipping [%d,%d]\n", opt->pen_clip5,
+            opt->pen_clip3);
         fprintf(stderr, "       -U INT        penalty for an unpaired read pair [%d]\n\n", opt->pen_unpaired);
-        fprintf(stderr, "       -x STR        read type. Setting -x changes multiple parameters unless overridden [null]\n");
+        fprintf(stderr,
+            "       -x STR        read type. Setting -x changes multiple parameters unless overridden [null]\n");
         fprintf(stderr, "                     pacbio: -k17 -W40 -r10 -A1 -B1 -O1 -E1 -L0  (PacBio reads to ref)\n");
-        fprintf(stderr, "                     ont2d: -k14 -W20 -r10 -A1 -B1 -O1 -E1 -L0  (Oxford Nanopore 2D-reads to ref)\n");
+        fprintf(stderr,
+            "                     ont2d: -k14 -W20 -r10 -A1 -B1 -O1 -E1 -L0  (Oxford Nanopore 2D-reads to ref)\n");
         fprintf(stderr, "                     intractg: -B9 -O16 -L5  (intra-species contigs to ref)\n");
         fprintf(stderr, "\nInput/output options:\n\n");
         fprintf(stderr, "       -p            smart pairing (ignoring in2.fq)\n");
         fprintf(stderr, "       -R STR        read group header line such as '@RG\\tID:foo\\tSM:bar' [null]\n");
-        fprintf(stderr, "       -H STR/FILE   insert STR to header if it starts with @; or insert lines in FILE [null]\n");
+        fprintf(stderr,
+            "       -H STR/FILE   insert STR to header if it starts with @; or insert lines in FILE [null]\n");
         fprintf(stderr, "       -o FILE       sam file to output results to [stdout]\n");
         fprintf(stderr,
             "       -j            treat ALT contigs as part of the primary assembly (i.e. ignore <idxbase>.alt file)\n");
-        fprintf(stderr, "       -5            for split alignment, take the alignment with the smallest coordinate as primary\n");
+        fprintf(stderr,
+            "       -5            for split alignment, take the alignment with the smallest coordinate as primary\n");
         fprintf(stderr, "       -q            don't modify mapQ of supplementary alignments\n");
         fprintf(stderr,
             "       -K INT        process INT input bases in each batch regardless of nThreads (for reproducibility) []\n");
         fprintf(stderr, "\n");
-        fprintf(stderr, "       -v INT        verbosity level: 1=error, 2=warning, 3=message, 4+=debugging [%d]\n", bwa_verbose);
+        fprintf(stderr, "       -v INT        verbosity level: 1=error, 2=warning, 3=message, 4+=debugging [%d]\n",
+            bwa_verbose);
         fprintf(stderr, "       -T INT        minimum score to output [%d]\n", opt->T);
         fprintf(stderr,
             "       -h INT[,INT]  if there are <INT hits with score >80%% of the max score, output all in XA [%d,%d]\n",
@@ -416,8 +430,10 @@ int main_mem(int argc, char *argv[]) {
         fprintf(stderr, "       -Y            use soft clipping for supplementary alignments\n");
         fprintf(stderr, "       -M            mark shorter split hits as secondary\n\n");
         fprintf(stderr, "       -I FLOAT[,FLOAT[,INT[,INT]]]\n");
-        fprintf(stderr, "                     specify the mean, standard deviation (10%% of the mean if absent), max\n");
-        fprintf(stderr, "                     (4 sigma from the mean if absent) and min of the insert size distribution.\n");
+        fprintf(stderr,
+            "                     specify the mean, standard deviation (10%% of the mean if absent), max\n");
+        fprintf(stderr,
+            "                     (4 sigma from the mean if absent) and min of the insert size distribution.\n");
         fprintf(stderr, "                     FR orientation only. [inferred]\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Note: Please read the man page for detailed description of the command line and options.\n");
@@ -602,7 +618,8 @@ int main_fastmap(int argc, char *argv[]) {
         fprintf(stderr, "         -w INT    max interval size to find coordiantes [%d]\n", min_iwidth);
         fprintf(stderr, "         -i INT    min SMEM interval size [%d]\n", min_intv);
         fprintf(stderr, "         -L INT    max MEM length [%d]\n", max_len);
-        fprintf(stderr, "         -I INT    stop if MEM is longer than -l with a size less than INT [%ld]\n", (long) max_intv);
+        fprintf(stderr, "         -I INT    stop if MEM is longer than -l with a size less than INT [%ld]\n",
+            (long)max_intv);
         fprintf(stderr, "\n");
         return 1;
     }
@@ -622,28 +639,28 @@ int main_fastmap(int argc, char *argv[]) {
         } else
             err_putchar('\n');
         for (i = 0; i < seq->seq.l; ++i) {
-            seq->seq.s[i] = nst_nt4_table[(int) seq->seq.s[i]];
+            seq->seq.s[i] = nst_nt4_table[(int)seq->seq.s[i]];
         }
-        smem_set_query(itr, seq->seq.l, (uint8_t *) seq->seq.s);
+        smem_set_query(itr, seq->seq.l, (uint8_t *)seq->seq.s);
         while ((a = smem_next(itr)) != 0) {
             for (i = 0; i < a->n; ++i) {
                 bwtintv_t *p = &a->a[i];
-                if ((uint32_t) p->info - (p->info >> 32) < min_len) {
+                if ((uint32_t)p->info - (p->info >> 32) < min_len) {
                     continue;
                 }
-                err_printf("EM\t%d\t%d\t%ld", (uint32_t) (p->info >> 32), (uint32_t) p->info, (long) p->x[2]);
+                err_printf("EM\t%d\t%d\t%ld", (uint32_t)(p->info >> 32), (uint32_t)p->info, (long)p->x[2]);
                 if (p->x[2] <= min_iwidth) {
                     for (k = 0; k < p->x[2]; ++k) {
                         bwtint_t pos;
                         int len, is_rev, ref_id;
-                        len = (uint32_t) p->info - (p->info >> 32);
+                        len = (uint32_t)p->info - (p->info >> 32);
                         pos = bns_depos(idx->bns, bwt_sa(idx->bwt, p->x[0] + k), &is_rev);
                         if (is_rev) {
                             pos -= len - 1;
                         }
                         bns_cnt_ambi(idx->bns, pos, len, &ref_id);
                         err_printf("\t%s:%c%ld", idx->bns->anns[ref_id].name, "+-"[is_rev],
-                            (long) (pos - idx->bns->anns[ref_id].offset) + 1);
+                            (long)(pos - idx->bns->anns[ref_id].offset) + 1);
                     }
                 } else {
                     err_puts("\t*");

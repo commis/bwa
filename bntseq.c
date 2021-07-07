@@ -196,7 +196,7 @@ bntseq_t *bns_restore_core(const char *ann_filename, const char *amb_filename, c
     err_fatal(__func__, "Parse error reading %s\n", fname);
 }
 
-//加载bns数据，输入：prefix-参考基因序列文件名
+//加载bns数据，输入：prefix-reference文件名
 bntseq_t *bns_restore(const char *prefix) {
     char ann_filename[1024], amb_filename[1024], pac_filename[1024], alt_filename[1024];
     FILE *fp;

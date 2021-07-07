@@ -1617,7 +1617,6 @@ static void worker1(void *data, int i, int tid) {
 }
 
 static void worker2(void *data, int i, int tid) {
-    //声明函数定义，省去头文件包含，该函数的具体实现在bwamem_pair.c文件中
     extern int mem_sam_pe(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, const mem_pestat_t pes[4], uint64_t id, bseq1_t s[2], mem_alnreg_v a[2]);
 
     worker_t *w = (worker_t *)data;

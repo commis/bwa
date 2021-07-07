@@ -57,7 +57,16 @@ typedef struct {
 
 //待比对基因序列的数据结构
 typedef struct {
+    /**
+     * l_seq seq的长度
+     * id seq的index（计数）
+     */
     int l_seq, id;
+    /**
+     * name seq文件的名称，位于匹配文件的第一行
+     * seq seq的内容，处理中会被转换为2bit的数据，即nst_nt4_table的映射值
+     * qual seq中+后面的一段
+     */
     char *name, *comment, *seq, *qual, *sam;
 } bseq1_t;
 

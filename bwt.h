@@ -60,12 +60,18 @@ typedef struct {
 } bwt_t;
 
 typedef struct {
+    /**
+     * x[0]：forward匹配起点
+     * x[1]：backward匹配起点
+     * x[2]：interval的长度（个数）
+     * info：低32位存Mems右端在sequence上的索引位置，高32位存Mems左端的索引位置
+     */
     bwtint_t x[3], info;
 } bwtintv_t;
 
 typedef struct {
-    size_t n, m;
-    bwtintv_t *a;
+    size_t n, m;  //n为seq在reference上bwtintv_t的个数，m用于扩展内存使用，当m==n时，自动扩展一倍a的内存空间
+    bwtintv_t *a; //用于存储数据，数据长度为n
 } bwtintv_v;
 
 /* For general OCC_INTERVAL, the following is correct:
