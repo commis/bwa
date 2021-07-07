@@ -145,10 +145,18 @@ static void smem_aux_destroy(smem_aux_t *a) {
     free(a);
 }
 
+/**
+ * 在bwt上找到seq对应的所有的MEMS
+ * @param opt 执行参数值
+ * @param bwt bwt表
+ * @param len seq的长度
+ * @param seq seq数据
+ * @param a 存储smems的指针
+ */
 static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, const uint8_t *seq, smem_aux_t *a) {
     int i, k, x = 0, old_n;
     int start_width = 1;
-    int split_len = (int) (opt->min_seed_len * opt->split_factor + .499);
+    int split_len = (int)(opt->min_seed_len * opt->split_factor + .499);
     a->mem.n = 0;
     // first pass: find all SMEMs
     while (x < len) {
@@ -156,7 +164,7 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
             x = bwt_smem1(bwt, len, seq, x, start_width, &a->mem1, a->tmpv);
             for (i = 0; i < a->mem1.n; ++i) {
                 bwtintv_t *p = &a->mem1.a[i];
-                int slen = (uint32_t) p->info - (p->info >> 32); // seed length
+                int slen = (uint32_t)p->info - (p->info >> 32); // seed length
                 if (slen >= opt->min_seed_len)
                     kv_push(bwtintv_t, a->mem, *p);
             }
@@ -168,13 +176,13 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
     old_n = a->mem.n;
     for (k = 0; k < old_n; ++k) {
         bwtintv_t *p = &a->mem.a[k];
-        int start = p->info >> 32, end = (int32_t) p->info;
+        int start = p->info >> 32, end = (int32_t)p->info;
         if (end - start < split_len || p->x[2] > opt->split_width) {
             continue;
         }
         bwt_smem1(bwt, len, seq, (start + end) >> 1, p->x[2] + 1, &a->mem1, a->tmpv);
         for (i = 0; i < a->mem1.n; ++i) {
-            if ((uint32_t) a->mem1.a[i].info - (a->mem1.a[i].info >> 32) >= opt->min_seed_len)
+            if ((uint32_t)a->mem1.a[i].info - (a->mem1.a[i].info >> 32) >= opt->min_seed_len)
                 kv_push(bwtintv_t, a->mem, a->mem1.a[i]);
         }
     }
@@ -297,31 +305,42 @@ void mem_print_chain(const bntseq_t *bns, mem_chain_v *chn) {
             if (is_rev) {
                 pos -= p->seeds[j].len - 1;
             }
-            err_printf("\t%d;%d;%d,%ld(%s:%c%ld)", p->seeds[j].score, p->seeds[j].len, p->seeds[j].qbeg, (long) p->seeds[j].rbeg,
-                bns->anns[p->rid].name, "+-"[is_rev], (long) (pos - bns->anns[p->rid].offset) + 1);
+            err_printf("\t%d;%d;%d,%ld(%s:%c%ld)", p->seeds[j].score, p->seeds[j].len, p->seeds[j].qbeg,
+                (long)p->seeds[j].rbeg,
+                bns->anns[p->rid].name, "+-"[is_rev], (long)(pos - bns->anns[p->rid].offset) + 1);
         }
         err_putchar('\n');
     }
 }
 
+/**
+ * 对读取到的待匹配序列在bwt表中进行完全匹配
+ * @param opt 执行参数值
+ * @param bwt 参考序列bwt数据
+ * @param bns 参考序列bns数据
+ * @param len 待比对序列长度
+ * @param seq 待比对序列转换后的数据
+ * @param buf
+ * @return 链接过后的chain链
+ */
 mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, int len, const uint8_t *seq, void *buf) {
-    int i, b, e, l_rep;
+    int b, e, l_rep;
     int64_t l_pac = bns->l_pac;
-    mem_chain_v chain;
     kbtree_t(chn) *tree;
     smem_aux_t *aux;
 
+    mem_chain_v chain;
     kv_init(chain);
     if (len < opt->min_seed_len) {
         return chain;
     } // if the query is shorter than the seed length, no match
     tree = kb_init(chn, KB_DEFAULT_SIZE);
 
-    aux = buf ? (smem_aux_t *) buf : smem_aux_init();
+    aux = buf ? (smem_aux_t *)buf : smem_aux_init();
     mem_collect_intv(opt, bwt, len, seq, aux);
-    for (i = 0, b = e = l_rep = 0; i < aux->mem.n; ++i) { // compute frac_rep
+    for (int i = 0, b = e = l_rep = 0; i < aux->mem.n; ++i) { // compute frac_rep
         bwtintv_t *p = &aux->mem.a[i];
-        int sb = (p->info >> 32), se = (uint32_t) p->info;
+        int sb = (p->info >> 32), se = (uint32_t)p->info;
         if (p->x[2] <= opt->max_occ) {
             continue;
         }
@@ -332,9 +351,9 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
         }
     }
     l_rep += e - b;
-    for (i = 0; i < aux->mem.n; ++i) {
+    for (int i = 0; i < aux->mem.n; ++i) {
         bwtintv_t *p = &aux->mem.a[i];
-        int step, count, slen = (uint32_t) p->info - (p->info >> 32); // seed length
+        int step, count, slen = (uint32_t)p->info - (p->info >> 32); // seed length
         int64_t k;
         // if (slen < opt->min_seed_len) continue; // ignore if too short or too repetitive
         step = p->x[2] > opt->max_occ ? p->x[2] / opt->max_occ : 1;
@@ -363,7 +382,7 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
                 tmp.seeds = calloc(tmp.m, sizeof(mem_seed_t));
                 tmp.seeds[0] = s;
                 tmp.rid = rid;
-                tmp.is_alt = !!bns->anns[rid].is_alt;
+                tmp.is_alt = bns->anns[rid].is_alt != 0;
                 kb_putp(chn, tree, &tmp);
             }
         }
@@ -378,11 +397,11 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
     __kb_traverse(mem_chain_t, tree, traverse_func);
 #undef traverse_func
 
-    for (i = 0; i < chain.n; ++i) {
-        chain.a[i].frac_rep = (float) l_rep / len;
+    for (int i = 0; i < chain.n; ++i) {
+        chain.a[i].frac_rep = (float)l_rep / len;
     }
     if (bwa_verbose >= 4) {
-        printf("* fraction of repetitive seeds: %.3f\n", (float) l_rep / len);
+        printf("* fraction of repetitive seeds: %.3f\n", (float)l_rep / len);
     }
 
     kb_destroy(chn, tree);
@@ -518,11 +537,12 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
     } // not colinear
     w = (a->re - b->rb) - (a->qe - b->qb); // required bandwidth
     w = w > 0 ? w : -w; // l = abs(l)
-    r = (double) (a->re - b->rb) / (b->re - a->rb) - (double) (a->qe - b->qb) / (b->qe - a->qb); // relative bandwidth
+    r = (double)(a->re - b->rb) / (b->re - a->rb) - (double)(a->qe - b->qb) / (b->qe - a->qb); // relative bandwidth
     r = r > 0. ? r : -r; // r = fabs(r)
     if (bwa_verbose >= 4) {
         printf("* potential hit merge between [%d,%d)<=>[%ld,%ld) and [%d,%d)<=>[%ld,%ld), @ %s; w=%d, r=%.4g\n",
-            a->qb, a->qe, (long) a->rb, (long) a->re, b->qb, b->qe, (long) b->rb, (long) b->re, bns->anns[a->rid].name, w, r);
+            a->qb, a->qe, (long)a->rb, (long)a->re, b->qb, b->qe, (long)b->rb, (long)b->re, bns->anns[a->rid].name,
+            w, r);
     }
     if (a->re < b->rb || a->qe < b->qb) { // no overlap on query or on ref
         if (w > opt->w << 1 || r >= PATCH_MAX_R_BW) {
@@ -537,14 +557,15 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
     if (bwa_verbose >= 4) {
         printf("* test potential hit merge with global alignment; w=%d\n", w);
     }
-    bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w, bns->l_pac, pac, b->qe - a->qb, query + a->qb,
+    bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w, bns->l_pac, pac, b->qe - a->qb,
+        query + a->qb,
         a->rb, b->re, &score, 0, 0);
-    q_s = (int) ((double) (b->qe - a->qb) / ((b->qe - b->qb) + (a->qe - a->qb)) * (b->score + a->score) + .499); // predicted score from query
-    r_s = (int) ((double) (b->re - a->rb) / ((b->re - b->rb) + (a->re - a->rb)) * (b->score + a->score) + .499); // predicted score from ref
+    q_s = (int)((double)(b->qe - a->qb) / ((b->qe - b->qb) + (a->qe - a->qb)) * (b->score + a->score) + .499); // predicted score from query
+    r_s = (int)((double)(b->re - a->rb) / ((b->re - b->rb) + (a->re - a->rb)) * (b->score + a->score) + .499); // predicted score from ref
     if (bwa_verbose >= 4) {
         printf("* score=%d;(%d,%d)\n", score, q_s, r_s);
     }
-    if ((double) score / (q_s > r_s ? q_s : r_s) < PATCH_MIN_SC_RATIO) {
+    if ((double)score / (q_s > r_s ? q_s : r_s) < PATCH_MIN_SC_RATIO) {
         return 0;
     }
     *_w = w;
@@ -583,7 +604,8 @@ int mem_sort_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns, const uint8_
                 } else {
                     q->qe = q->qb;
                 }
-            } else if (q->rb < p->rb && (score = mem_patch_reg(opt, bns, pac, query, q, p, &w)) > 0) { // then merge q into p
+            } else if (q->rb < p->rb && (score = mem_patch_reg(opt, bns, pac, query, q, p,
+                &w)) > 0) { // then merge q into p
                 p->n_comp += q->n_comp + 1;
                 p->seedcov = p->seedcov > q->seedcov ? p->seedcov : q->seedcov;
                 p->sub = p->sub > q->sub ? p->sub : q->sub;
@@ -754,7 +776,8 @@ int mem_seed_sw(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, i
     } // the seed seems good enough; no need to do SW
 
     rseq = bns_fetch_seq(bns, pac, &rb, mid, &re, &rid);
-    x = ksw_align2(qe - qb, (uint8_t *) query + qb, re - rb, rseq, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins,
+    x = ksw_align2(qe - qb, (uint8_t *)query + qb, re - rb, rseq, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins,
+        opt->e_ins,
         KSW_XSTART, 0);
     free(rseq);
     return x.score;
@@ -762,7 +785,7 @@ int mem_seed_sw(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, i
 
 void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, int n_chn, mem_chain_t *a) {
     double min_l = opt->min_chain_weight ? MEM_HSP_COEF * opt->min_chain_weight : MEM_MINSC_COEF * log(l_query);
-    int i, j, k, min_HSP_score = (int) (opt->a * min_l + .499);
+    int i, j, k, min_HSP_score = (int)(opt->a * min_l + .499);
     if (min_l > MEM_SEEDSW_COEF * l_query) {
         return;
     } // don't run the following for short reads
@@ -785,8 +808,8 @@ void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint
  ****************************************/
 
 static inline int cal_max_gap(const mem_opt_t *opt, int qlen) {
-    int l_del = (int) ((double) (qlen * opt->a - opt->o_del) / opt->e_del + 1.);
-    int l_ins = (int) ((double) (qlen * opt->a - opt->o_ins) / opt->e_ins + 1.);
+    int l_del = (int)((double)(qlen * opt->a - opt->o_del) / opt->e_del + 1.);
+    int l_ins = (int)((double)(qlen * opt->a - opt->o_ins) / opt->e_ins + 1.);
     int l = l_del > l_ins ? l_del : l_ins;
     l = l > 1 ? l : 1;
     return l < opt->w << 1 ? l : opt->w << 1;
@@ -833,13 +856,13 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
 
     srt = malloc(c->n * 8);
     for (i = 0; i < c->n; ++i) {
-        srt[i] = (uint64_t) c->seeds[i].score << 32 | i;
+        srt[i] = (uint64_t)c->seeds[i].score << 32 | i;
     }
     ks_introsort_64(c->n, srt);
 
     for (k = c->n - 1; k >= 0; --k) {
         mem_alnreg_t *a;
-        s = &c->seeds[(uint32_t) srt[k]];
+        s = &c->seeds[(uint32_t)srt[k]];
 
         for (i = 0; i < av->n; ++i) { // test whether extension has been made before
             mem_alnreg_t *p = &av->a[i];
@@ -871,15 +894,15 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
         if (i < av->n) { // the seed is (almost) contained in an existing alignment; further testing is needed to confirm it is not leading to a different aln
             if (bwa_verbose >= 4) {
                 printf("** Seed(%d) [%ld;%ld,%ld] is almost contained in an existing alignment [%d,%d) <=> [%ld,%ld)\n",
-                    k, (long) s->len, (long) s->qbeg, (long) s->rbeg, av->a[i].qb, av->a[i].qe, (long) av->a[i].rb,
-                    (long) av->a[i].re);
+                    k, (long)s->len, (long)s->qbeg, (long)s->rbeg, av->a[i].qb, av->a[i].qe, (long)av->a[i].rb,
+                    (long)av->a[i].re);
             }
             for (i = k + 1; i < c->n; ++i) { // check overlapping seeds in the same chain
                 const mem_seed_t *t;
                 if (srt[i] == 0) {
                     continue;
                 }
-                t = &c->seeds[(uint32_t) srt[i]];
+                t = &c->seeds[(uint32_t)srt[i]];
                 if (t->len < s->len * .95) {
                     continue;
                 } // only check overlapping if t is long enough; TODO: more efficient by early stopping
@@ -908,8 +931,8 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
         a->rid = c->rid;
 
         if (bwa_verbose >= 4) {
-            err_printf("** ---> Extending from seed(%d) [%ld;%ld,%ld] @ %s <---\n", k, (long) s->len, (long) s->qbeg,
-                (long) s->rbeg, bns->anns[c->rid].name);
+            err_printf("** ---> Extending from seed(%d) [%ld;%ld,%ld] @ %s <---\n", k, (long)s->len, (long)s->qbeg,
+                (long)s->rbeg, bns->anns[c->rid].name);
         }
         if (s->qbeg) { // left extension
             uint8_t *rs, *qs;
@@ -930,19 +953,21 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
                     int j;
                     printf("*** Left ref:   ");
                     for (j = 0; j < tmp; ++j) {
-                        putchar("ACGTN"[(int) rs[j]]);
+                        putchar("ACGTN"[(int)rs[j]]);
                     }
                     putchar('\n');
                     printf("*** Left query: ");
                     for (j = 0; j < s->qbeg; ++j) {
-                        putchar("ACGTN"[(int) qs[j]]);
+                        putchar("ACGTN"[(int)qs[j]]);
                     }
                     putchar('\n');
                 }
-                a->score = ksw_extend2(s->qbeg, qs, tmp, rs, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, aw[0],
+                a->score = ksw_extend2(s->qbeg, qs, tmp, rs, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins,
+                    opt->e_ins, aw[0],
                     opt->pen_clip5, opt->zdrop, s->len * opt->a, &qle, &tle, &gtle, &gscore, &max_off[0]);
                 if (bwa_verbose >= 4) {
-                    printf("*** Left extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n", prev,
+                    printf("*** Left extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n",
+                        prev,
                         a->score, aw[0], max_off[0]);
                     fflush(stdout);
                 }
@@ -976,20 +1001,23 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
                     int j;
                     printf("*** Right ref:   ");
                     for (j = 0; j < rmax[1] - rmax[0] - re; ++j) {
-                        putchar("ACGTN"[(int) rseq[re + j]]);
+                        putchar("ACGTN"[(int)rseq[re + j]]);
                     }
                     putchar('\n');
                     printf("*** Right query: ");
                     for (j = 0; j < l_query - qe; ++j) {
-                        putchar("ACGTN"[(int) query[qe + j]]);
+                        putchar("ACGTN"[(int)query[qe + j]]);
                     }
                     putchar('\n');
                 }
-                a->score = ksw_extend2(l_query - qe, query + qe, rmax[1] - rmax[0] - re, rseq + re, 5, opt->mat, opt->o_del,
-                    opt->e_del, opt->o_ins, opt->e_ins, aw[1], opt->pen_clip3, opt->zdrop, sc0, &qle, &tle, &gtle, &gscore,
+                a->score = ksw_extend2(l_query - qe, query + qe, rmax[1] - rmax[0] - re, rseq + re, 5, opt->mat,
+                    opt->o_del,
+                    opt->e_del, opt->o_ins, opt->e_ins, aw[1], opt->pen_clip3, opt->zdrop, sc0, &qle, &tle, &gtle,
+                    &gscore,
                     &max_off[1]);
                 if (bwa_verbose >= 4) {
-                    printf("*** Right extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n", prev,
+                    printf("*** Right extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n",
+                        prev,
                         a->score, aw[1], max_off[1]);
                     fflush(stdout);
                 }
@@ -1009,8 +1037,9 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
             a->qe = l_query, a->re = s->rbeg + s->len;
         }
         if (bwa_verbose >= 4) {
-            printf("*** Added alignment region: [%d,%d) <=> [%ld,%ld); score=%d; {left,right}_bandwidth={%d,%d}\n", a->qb, a->qe,
-                (long) a->rb, (long) a->re, a->score, aw[0], aw[1]);
+            printf("*** Added alignment region: [%d,%d) <=> [%ld,%ld); score=%d; {left,right}_bandwidth={%d,%d}\n",
+                a->qb, a->qe,
+                (long)a->rb, (long)a->re, a->score, aw[0], aw[1]);
         }
 
         // compute seedcov
@@ -1038,7 +1067,7 @@ static inline int infer_bw(int l1, int l2, int score, int a, int q, int r) {
     if (l1 == l2 && l1 * a - score < (q + r - a) << 1) {
         return 0;
     } // to get equal alignment length, we need at least two gaps
-    w = ((double) ((l1 < l2 ? l1 : l2) * a - score - q) / r + 2.);
+    w = ((double)((l1 < l2 ? l1 : l2) * a - score - q) / r + 2.);
     if (w < abs(l1 - l2)) {
         w = abs(l1 - l2);
     }
@@ -1153,7 +1182,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
         }
         ks_resize(str, str->l + (qe - qb) + 1);
         for (i = qb; i < qe; ++i) {
-            str->s[str->l++] = "ACGTN"[(int) s->seq[i]];
+            str->s[str->l++] = "ACGTN"[(int)s->seq[i]];
         }
         kputc('\t', str);
         if (s->qual) { // printf qual
@@ -1177,7 +1206,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
         }
         ks_resize(str, str->l + (qe - qb) + 1);
         for (i = qe - 1; i >= qb; --i) {
-            str->s[str->l++] = "TGCAN"[(int) s->seq[i]];
+            str->s[str->l++] = "TGCAN"[(int)s->seq[i]];
         }
         kputc('\t', str);
         if (s->qual) { // printf qual
@@ -1196,7 +1225,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
         kputsn("\tNM:i:", 6, str);
         kputw(p->NM, str);
         kputsn("\tMD:Z:", 6, str);
-        kputs((char *) (p->cigar + p->n_cigar), str);
+        kputs((char *)(p->cigar + p->n_cigar), str);
     }
     if (m && m->n_cigar) {
         kputsn("\tMC:Z:", 6, str);
@@ -1246,7 +1275,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
             }
         }
         if (p->alt_sc > 0) {
-            ksprintf(str, "\tpa:f:%.3f", (double) p->score / p->alt_sc);
+            ksprintf(str, "\tpa:f:%.3f", (double)p->score / p->alt_sc);
         }
     }
     if (p->XA) {
@@ -1283,20 +1312,20 @@ int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a) {
         return 0;
     }
     l = a->qe - a->qb > a->re - a->rb ? a->qe - a->qb : a->re - a->rb;
-    identity = 1. - (double) (l * opt->a - a->score) / (opt->a + opt->b) / l;
+    identity = 1. - (double)(l * opt->a - a->score) / (opt->a + opt->b) / l;
     if (a->score == 0) {
         mapq = 0;
     } else if (opt->mapQ_coef_len > 0) {
         double tmp;
         tmp = l < opt->mapQ_coef_len ? 1. : opt->mapQ_coef_fac / log(l);
         tmp *= identity * identity;
-        mapq = (int) (6.02 * (a->score - sub) / opt->a * tmp * tmp + .499);
+        mapq = (int)(6.02 * (a->score - sub) / opt->a * tmp * tmp + .499);
     } else {
-        mapq = (int) (MEM_MAPQ_COEF * (1. - (double) sub / a->score) * log(a->seedcov) + .499);
-        mapq = identity < 0.95 ? (int) (mapq * identity * identity + .499) : mapq;
+        mapq = (int)(MEM_MAPQ_COEF * (1. - (double)sub / a->score) * log(a->seedcov) + .499);
+        mapq = identity < 0.95 ? (int)(mapq * identity * identity + .499) : mapq;
     }
     if (a->sub_n > 0) {
-        mapq -= (int) (4.343 * log(a->sub_n + 1) + .499);
+        mapq -= (int)(4.343 * log(a->sub_n + 1) + .499);
     }
     if (mapq > 60) {
         mapq = 60;
@@ -1304,7 +1333,7 @@ int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a) {
     if (mapq < 0) {
         mapq = 0;
     }
-    mapq = (int) (mapq * (1. - a->frac_rep) + .499);
+    mapq = (int)(mapq * (1. - a->frac_rep) + .499);
     return mapq;
 }
 
@@ -1413,41 +1442,49 @@ void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, 
     }
 }
 
+/**
+ * ktf_worker worker1的入口函数，确定reads匹配到reference上的位置信息
+ * @param opt 工具mem匹配的参数
+ * @param bwt 参考序列的bwt数据
+ * @param bns 参考序列的bns数据
+ * @param pac 参考序列的pac数据
+ * @param l_seq 待比对序列的长度
+ * @param seq 待比对序列
+ * @param buf
+ * @return
+ */
 mem_alnreg_v mem_align1_core(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int l_seq, char *seq, void *buf) {
-    int i;
-    mem_chain_v chn;
-    mem_alnreg_v regs;
-
-    for (i = 0; i < l_seq; ++i) { // convert to 2-bit encoding if we have not done so
-        seq[i] = seq[i] < 4 ? seq[i] : nst_nt4_table[(int) seq[i]];
+    for (int i = 0; i < l_seq; ++i) { // convert to 2-bit encoding if we have not done so
+        seq[i] = seq[i] < 4 ? seq[i] : nst_nt4_table[(int)seq[i]];
     }
 
-    chn = mem_chain(opt, bwt, bns, l_seq, (uint8_t *) seq, buf);
+    mem_chain_v chn = mem_chain(opt, bwt, bns, l_seq, (uint8_t *)seq, buf);
     chn.n = mem_chain_flt(opt, chn.n, chn.a);
-    mem_flt_chained_seeds(opt, bns, pac, l_seq, (uint8_t *) seq, chn.n, chn.a);
+    mem_flt_chained_seeds(opt, bns, pac, l_seq, (uint8_t *)seq, chn.n, chn.a);
     if (bwa_verbose >= 4) {
         mem_print_chain(bns, &chn);
     }
 
+    mem_alnreg_v regs;
     kv_init(regs);
-    for (i = 0; i < chn.n; ++i) {
+    for (int i = 0; i < chn.n; ++i) {
         mem_chain_t *p = &chn.a[i];
         if (bwa_verbose >= 4) {
             err_printf("* ---> Processing chain(%d) <---\n", i);
         }
-        mem_chain2aln(opt, bns, pac, l_seq, (uint8_t *) seq, p, &regs);
+        mem_chain2aln(opt, bns, pac, l_seq, (uint8_t *)seq, p, &regs);
         free(chn.a[i].seeds);
     }
     free(chn.a);
-    regs.n = mem_sort_dedup_patch(opt, bns, pac, (uint8_t *) seq, regs.n, regs.a);
+    regs.n = mem_sort_dedup_patch(opt, bns, pac, (uint8_t *)seq, regs.n, regs.a);
     if (bwa_verbose >= 4) {
         err_printf("* %ld chains remain after removing duplicated chains\n", regs.n);
-        for (i = 0; i < regs.n; ++i) {
+        for (int i = 0; i < regs.n; ++i) {
             mem_alnreg_t *p = &regs.a[i];
-            printf("** %d, [%d,%d) <=> [%ld,%ld)\n", p->score, p->qb, p->qe, (long) p->rb, (long) p->re);
+            printf("** %d, [%d,%d) <=> [%ld,%ld)\n", p->score, p->qb, p->qe, (long)p->rb, (long)p->re);
         }
     }
-    for (i = 0; i < regs.n; ++i) {
+    for (int i = 0; i < regs.n; ++i) {
         mem_alnreg_t *p = &regs.a[i];
         if (p->rid >= 0 && bns->anns[p->rid].is_alt) {
             p->is_alt = 1;
@@ -1473,7 +1510,7 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
     rb = ar->rb, re = ar->re;
     query = malloc(l_query);
     for (i = 0; i < l_query; ++i) { // convert to the nt4 encoding
-        query[i] = query_[i] < 5 ? query_[i] : nst_nt4_table[(int) query_[i]];
+        query[i] = query_[i] < 5 ? query_[i] : nst_nt4_table[(int)query_[i]];
     }
     a.mapq = ar->secondary < 0 ? mem_approx_mapq_se(opt, ar) : 0;
     if (ar->secondary >= 0) {
@@ -1494,7 +1531,7 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         free(a.cigar);
         w2 = w2 < opt->w << 2 ? w2 : opt->w << 2;
         a.cigar = bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w2, bns->l_pac, pac, qe - qb,
-            (uint8_t *) &query[qb], rb, re, &score, &a.n_cigar, &NM);
+            (uint8_t *)&query[qb], rb, re, &score, &a.n_cigar, &NM);
         if (bwa_verbose >= 4) {
             printf("* Final alignment: w2=%d, global_sc=%d, local_sc=%d\n", w2, score, ar->truesc);
         }
@@ -1504,7 +1541,7 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         last_sc = score;
         w2 <<= 1;
     } while (++i < 3 && score < ar->truesc - opt->a);
-    l_MD = strlen((char *) (a.cigar + a.n_cigar)) + 1;
+    l_MD = strlen((char *)(a.cigar + a.n_cigar)) + 1;
     a.NM = NM;
     pos = bns_depos(bns, rb < bns->l_pac ? rb : re - 1, &is_rev);
     a.is_rev = is_rev;
@@ -1557,7 +1594,7 @@ typedef struct {
 } worker_t;
 
 static void worker1(void *data, int i, int tid) {
-    worker_t *w = (worker_t *) data;
+    worker_t *w = (worker_t *)data;
     if (!(w->opt->flag & MEM_F_PE)) {
         if (bwa_verbose >= 4) {
             printf("=====> Processing read '%s' <=====\n", w->seqs[i].name);
@@ -1567,12 +1604,14 @@ static void worker1(void *data, int i, int tid) {
         if (bwa_verbose >= 4) {
             printf("=====> Processing read '%s'/1 <=====\n", w->seqs[i << 1 | 0].name);
         }
-        w->regs[i << 1 | 0] = mem_align1_core(w->opt, w->bwt, w->bns, w->pac, w->seqs[i << 1 | 0].l_seq, w->seqs[i << 1 | 0].seq,
+        w->regs[i << 1 | 0] = mem_align1_core(w->opt, w->bwt, w->bns, w->pac, w->seqs[i << 1 | 0].l_seq,
+            w->seqs[i << 1 | 0].seq,
             w->aux[tid]);
         if (bwa_verbose >= 4) {
             printf("=====> Processing read '%s'/2 <=====\n", w->seqs[i << 1 | 1].name);
         }
-        w->regs[i << 1 | 1] = mem_align1_core(w->opt, w->bwt, w->bns, w->pac, w->seqs[i << 1 | 1].l_seq, w->seqs[i << 1 | 1].seq,
+        w->regs[i << 1 | 1] = mem_align1_core(w->opt, w->bwt, w->bns, w->pac, w->seqs[i << 1 | 1].l_seq,
+            w->seqs[i << 1 | 1].seq,
             w->aux[tid]);
     }
 }
@@ -1581,7 +1620,7 @@ static void worker2(void *data, int i, int tid) {
     //声明函数定义，省去头文件包含，该函数的具体实现在bwamem_pair.c文件中
     extern int mem_sam_pe(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, const mem_pestat_t pes[4], uint64_t id, bseq1_t s[2], mem_alnreg_v a[2]);
 
-    worker_t *w = (worker_t *) data;
+    worker_t *w = (worker_t *)data;
     if (!(w->opt->flag & MEM_F_PE)) {
         if (bwa_verbose >= 4) {
             printf("=====> Finalizing read '%s' <=====\n", w->seqs[i].name);
@@ -1602,6 +1641,7 @@ static void worker2(void *data, int i, int tid) {
     }
 }
 
+//mem处理seqs的比对执行过程
 void mem_process_seqs(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int64_t n_processed, int n, bseq1_t *seqs, const mem_pestat_t *pes0) {
     extern void kt_for(int n_threads, void (*func)(void *, int, int), void *data, int n);
     worker_t w;

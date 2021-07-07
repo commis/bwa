@@ -64,27 +64,29 @@ typedef struct {
     bseq1_t *seqs;
 } ktp_data_t;
 
-//该执行过程的step由kthread.c中的ktp_worker控制
+//该执行过程的step由kthread.c中的ktp_worker控制，具体业务的执行入口函数
+//函数输入：shared(ktp_aux_t), step, data(ktp_data_t)
 static void *process(void *shared, int step, void *_data) {
     ktp_aux_t *aux = (ktp_aux_t *) shared;
     ktp_data_t *data = (ktp_data_t *) _data;
-    int i;
+
     if (step == 0) {
         ktp_data_t *ret;
         int64_t size = 0;
         ret = calloc(1, sizeof(ktp_data_t));
+        //第一步：读取待比对基因序列数据
         ret->seqs = bseq_read(aux->actual_chunk_size, &ret->n_seqs, aux->ks, aux->ks2);
         if (ret->seqs == 0) {
             free(ret);
             return 0;
         }
         if (!aux->copy_comment) {
-            for (i = 0; i < ret->n_seqs; ++i) {
+            for (int i = 0; i < ret->n_seqs; ++i) {
                 free(ret->seqs[i].comment);
                 ret->seqs[i].comment = 0;
             }
         }
-        for (i = 0; i < ret->n_seqs; ++i) {
+        for (int i = 0; i < ret->n_seqs; ++i) {
             size += ret->seqs[i].l_seq;
         }
         if (bwa_verbose >= 3) {
@@ -105,7 +107,7 @@ static void *process(void *shared, int step, void *_data) {
             if (n_sep[0]) {
                 tmp_opt.flag &= ~MEM_F_PE;
                 mem_process_seqs(&tmp_opt, idx->bwt, idx->bns, idx->pac, aux->n_processed, n_sep[0], sep[0], 0);
-                for (i = 0; i < n_sep[0]; ++i) {
+                for (int i = 0; i < n_sep[0]; ++i) {
                     data->seqs[sep[0][i].id].sam = sep[0][i].sam;
                 }
             }
@@ -113,24 +115,24 @@ static void *process(void *shared, int step, void *_data) {
                 tmp_opt.flag |= MEM_F_PE;
                 mem_process_seqs(&tmp_opt, idx->bwt, idx->bns, idx->pac, aux->n_processed + n_sep[0], n_sep[1], sep[1],
                     aux->pes0);
-                for (i = 0; i < n_sep[1]; ++i) {
+                for (int i = 0; i < n_sep[1]; ++i) {
                     data->seqs[sep[1][i].id].sam = sep[1][i].sam;
                 }
             }
             free(sep[0]);
             free(sep[1]);
         } else {
+            //第二步：mem处理seq序列的比对
             mem_process_seqs(opt, idx->bwt, idx->bns, idx->pac, aux->n_processed, data->n_seqs, data->seqs, aux->pes0);
         }
         aux->n_processed += data->n_seqs;
         return data;
     } else if (step == 2) {
-        for (i = 0; i < data->n_seqs; ++i) {
-            //如果匹配结果不为空，直接输出匹配结果（sam）
+        for (int i = 0; i < data->n_seqs; ++i) {
+            //如果匹配结果不为空，直接输出匹配结果(sam)
             if (data->seqs[i].sam) {
                 err_fputs(data->seqs[i].sam, stdout);
             }
-            //释放比对的序列片段数据
             free(data->seqs[i].name);
             free(data->seqs[i].comment);
             free(data->seqs[i].seq);
@@ -497,8 +499,10 @@ int main_mem(int argc, char *argv[]) {
     }
     bwa_fill_scmat(opt->a, opt->b, opt->mat);
 
+    //通过共享内存方式加载文件数据
     aux.idx = bwa_idx_load_from_shm(argv[optind]);
     if (aux.idx == 0) {
+        //从磁盘加载文件数据
         if ((aux.idx = bwa_idx_load(argv[optind], BWA_IDX_ALL)) == 0) {
             return 1;
         } // FIXME: memory leak

@@ -96,6 +96,7 @@ typedef struct ktp_t {
     pthread_cond_t cv; //线程中的条件变量
 } ktp_t;
 
+//多线程执行的入口函数，该函数控制执行哪些业务逻辑
 static void *ktp_worker(void *data) {
     ktp_worker_t *w = (ktp_worker_t *) data;
     ktp_t *p = w->pl;
@@ -106,9 +107,10 @@ static void *ktp_worker(void *data) {
             int i;
             // test whether another worker is doing the same step
             for (i = 0; i < p->n_workers; ++i) {
+                // ignore itself
                 if (w == &p->workers[i]) {
                     continue;
-                } // ignore itself
+                }
                 if (p->workers[i].step <= w->step && p->workers[i].index < w->index) {
                     break;
                 }
@@ -145,7 +147,7 @@ void kt_pipeline(int n_threads, void *(*func)(void *, int, void *), void *shared
     }
     aux.n_workers = n_threads;
     aux.n_steps = n_steps;
-    aux.func = func;
+    aux.func = func; //work function
     aux.shared = shared_data;
     aux.index = 0;
     pthread_mutex_init(&aux.mutex, 0);

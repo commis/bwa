@@ -292,7 +292,14 @@ int bwa_index(int argc, char *argv[]) {
     return 0;
 }
 
-// 构建FM-Index文件
+/**
+ * 构建FM-Index相关的几个文件
+ * @param fa 参考基因文件名
+ * @param prefix 文件名前缀，默认同文件名
+ * @param algo_type 算法类型值
+ * @param block_size 块大小，默认为10M
+ * @return
+ */
 int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_size) {
 
     char *str, *str2, *str3; //str输出pac的文件名，str3输出bwt的文件名
@@ -317,7 +324,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
     }
 
     // set the algorithm for generating BWT
-    // 根据pac的长度选择BWT算法：1-RB2，2-BWTSW，3-IS
+    // 根据pac的长度选择BWT算法：1-RB2，2-BWT-SW，3-IS
     if (algo_type == 0) {
         algo_type = l_pac > 50000000 ? 2 : 3;
     }

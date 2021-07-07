@@ -51,7 +51,9 @@ int main() {
 #include <stdlib.h>
 
 #ifdef USE_MALLOC_WRAPPERS
+
 #  include "malloc_wrap.h"
+
 #endif
 
 // 检验 x 值是否为2的n次幂
@@ -67,29 +69,29 @@ int main() {
 
 #define kv_resize(type, v, s)  ((v).m = (s), (v).a = (type*)realloc((v).a, sizeof(type) * (v).m))
 
-#define kv_copy(type, v1, v0) do {							\
-		if ((v1).m < (v0).n) kv_resize(type, v1, (v0).n);	\
-		(v1).n = (v0).n;									\
-		memcpy((v1).a, (v0).a, sizeof(type) * (v0).n);		\
-	} while (0)												\
+#define kv_copy(type, v1, v0) do {                            \
+        if ((v1).m < (v0).n) kv_resize(type, v1, (v0).n);    \
+        (v1).n = (v0).n;                                    \
+        memcpy((v1).a, (v0).a, sizeof(type) * (v0).n);        \
+    } while (0)                                                \
 
-#define kv_push(type, v, x) do {									\
-		if ((v).n == (v).m) {										\
-			(v).m = (v).m? (v).m<<1 : 2;							\
-			(v).a = (type*)realloc((v).a, sizeof(type) * (v).m); \
-		}															\
-		(v).a[(v).n++] = (x);										\
-	} while (0)
+#define kv_push(type, v, x) do {                                    \
+        if ((v).n == (v).m) {                                        \
+            (v).m = (v).m ? (v).m<<1 : 2;                            \
+            (v).a = (type*)realloc((v).a, sizeof(type) * (v).m); \
+        }                                                            \
+        (v).a[(v).n++] = (x);                                        \
+    } while (0)
 
-#define kv_pushp(type, v) ((((v).n == (v).m)?							\
-						   ((v).m = ((v).m? (v).m<<1 : 2),				\
-							(v).a = (type*)realloc((v).a, sizeof(type) * (v).m), 0)	\
-						   : 0), &(v).a[(v).n++])
+#define kv_pushp(type, v) ((((v).n == (v).m)?                            \
+                           ((v).m = ((v).m? (v).m<<1 : 2),                \
+                            (v).a = (type*)realloc((v).a, sizeof(type) * (v).m), 0)    \
+                           : 0), &(v).a[(v).n++])
 
 #define kv_a(type, v, i) (((v).m <= (size_t)(i)? \
-						  ((v).m = (v).n = (i) + 1, kv_roundup32((v).m), \
-						   (v).a = (type*)realloc((v).a, sizeof(type) * (v).m), 0) \
-						  : (v).n <= (size_t)(i)? (v).n = (i) + 1 \
-						  : 0), (v).a[(i)])
+                          ((v).m = (v).n = (i) + 1, kv_roundup32((v).m), \
+                           (v).a = (type*)realloc((v).a, sizeof(type) * (v).m), 0) \
+                          : (v).n <= (size_t)(i)? (v).n = (i) + 1 \
+                          : 0), (v).a[(i)])
 
 #endif

@@ -76,7 +76,7 @@ void bwt_cal_sa(bwt_t *bwt, int intv) {
     }
     bwt->sa_intv = intv;
     bwt->n_sa = (bwt->seq_len + intv) / intv;
-    bwt->sa = (bwtint_t *) calloc(bwt->n_sa, sizeof(bwtint_t));
+    bwt->sa = (bwtint_t *)calloc(bwt->n_sa, sizeof(bwtint_t));
     // calculate SA value
     isa = 0;
     sa = bwt->seq_len;
@@ -90,7 +90,7 @@ void bwt_cal_sa(bwt_t *bwt, int intv) {
     if (isa % intv == 0) {
         bwt->sa[isa / intv] = sa;
     }
-    bwt->sa[0] = (bwtint_t) -1; // before this line, bwt->sa[0] = bwt->seq_len
+    bwt->sa[0] = (bwtint_t)-1; // before this line, bwt->sa[0] = bwt->seq_len
 }
 
 bwtint_t bwt_sa(const bwt_t *bwt, bwtint_t k) {
@@ -119,23 +119,23 @@ bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c) {
     if (k == bwt->seq_len) {
         return bwt->L2[c + 1] - bwt->L2[c];
     }
-    if (k == (bwtint_t) (-1)) {
+    if (k == (bwtint_t)(-1)) {
         return 0;
     }
     k -= (k >= bwt->primary); // because $ is not in bwt
 
     // retrieve Occ at k/OCC_INTERVAL
-    n = ((bwtint_t *) (p = bwt_occ_intv(bwt, k)))[c];
+    n = ((bwtint_t *)(p = bwt_occ_intv(bwt, k)))[c];
     p += sizeof(bwtint_t); // jump to the start of the first BWT cell
 
     // calculate Occ up to the last k/32
     end = p + (((k >> 5) - ((k & ~OCC_INTV_MASK) >> 5)) << 1);
     for (; p < end; p += 2) {
-        n += __occ_aux((uint64_t) p[0] << 32 | p[1], c);
+        n += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
     }
 
     // calculate Occ
-    n += __occ_aux(((uint64_t) p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
+    n += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
     if (c == 0) {
         n -= ~k & 31;
     } // corrected for the masked bits
@@ -148,7 +148,7 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
     bwtint_t _k, _l;
     _k = (k >= bwt->primary) ? k - 1 : k;
     _l = (l >= bwt->primary) ? l - 1 : l;
-    if (_l / OCC_INTERVAL != _k / OCC_INTERVAL || k == (bwtint_t) (-1) || l == (bwtint_t) (-1)) {
+    if (_l / OCC_INTERVAL != _k / OCC_INTERVAL || k == (bwtint_t)(-1) || l == (bwtint_t)(-1)) {
         *ok = bwt_occ(bwt, k, c);
         *ol = bwt_occ(bwt, l, c);
     } else {
@@ -160,15 +160,15 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         if (l >= bwt->primary) {
             --l;
         }
-        n = ((bwtint_t *) (p = bwt_occ_intv(bwt, k)))[c];
+        n = ((bwtint_t *)(p = bwt_occ_intv(bwt, k)))[c];
         p += sizeof(bwtint_t);
         // calculate *ok
         j = k >> 5 << 5;
         for (i = k / OCC_INTERVAL * OCC_INTERVAL; i < j; i += 32, p += 2) {
-            n += __occ_aux((uint64_t) p[0] << 32 | p[1], c);
+            n += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
         }
         m = n;
-        n += __occ_aux(((uint64_t) p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
+        n += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
         if (c == 0) {
             n -= ~k & 31;
         } // corrected for the masked bits
@@ -176,9 +176,9 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         // calculate *ol
         j = l >> 5 << 5;
         for (; i < j; i += 32, p += 2) {
-            m += __occ_aux((uint64_t) p[0] << 32 | p[1], c);
+            m += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
         }
-        m += __occ_aux(((uint64_t) p[0] << 32 | p[1]) & ~((1ull << ((~l & 31) << 1)) - 1), c);
+        m += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~l & 31) << 1)) - 1), c);
         if (c == 0) {
             m -= ~l & 31;
         } // corrected for the masked bits
@@ -193,7 +193,7 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
 void bwt_occ4(const bwt_t *bwt, bwtint_t k, bwtint_t cnt[4]) {
     bwtint_t x;
     uint32_t *p, tmp, *end;
-    if (k == (bwtint_t) (-1)) {
+    if (k == (bwtint_t)(-1)) {
         memset(cnt, 0, 4 * sizeof(bwtint_t));
         return;
     }
@@ -218,7 +218,7 @@ void bwt_2occ4(const bwt_t *bwt, bwtint_t k, bwtint_t l, bwtint_t cntk[4], bwtin
     bwtint_t _k, _l;
     _k = k - (k >= bwt->primary);
     _l = l - (l >= bwt->primary);
-    if (_l >> OCC_INTV_SHIFT != _k >> OCC_INTV_SHIFT || k == (bwtint_t) (-1) || l == (bwtint_t) (-1)) {
+    if (_l >> OCC_INTV_SHIFT != _k >> OCC_INTV_SHIFT || k == (bwtint_t)(-1) || l == (bwtint_t)(-1)) {
         bwt_occ4(bwt, k, cntk);
         bwt_occ4(bwt, l, cntl);
     } else {
@@ -249,6 +249,7 @@ void bwt_2occ4(const bwt_t *bwt, bwtint_t k, bwtint_t l, bwtint_t cntk[4], bwtin
         cntk[1] += x >> 8 & 0xff;
         cntk[2] += x >> 16 & 0xff;
         cntk[3] += x >> 24;
+
         cntl[0] += y & 0xff;
         cntl[1] += y >> 8 & 0xff;
         cntl[2] += y >> 16 & 0xff;
@@ -313,9 +314,8 @@ int bwt_match_exact_alt(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t 
 
 void bwt_extend(const bwt_t *bwt, const bwtintv_t *ik, bwtintv_t ok[4], int is_back) {
     bwtint_t tk[4], tl[4];
-    int i;
     bwt_2occ4(bwt, ik->x[!is_back] - 1, ik->x[!is_back] - 1 + ik->x[2], tk, tl);
-    for (i = 0; i != 4; ++i) {
+    for (int i = 0; i != 4; ++i) {
         ok[i].x[!is_back] = bwt->L2[i] + 1 + tk[i];
         ok[i].x[2] = tl[i] - tk[i];
     }
@@ -337,6 +337,18 @@ static void bwt_reverse_intvs(bwtintv_v *p) {
 }
 
 // NOTE: $max_intv is not currently used in BWA-MEM
+/**
+ * 以单个碱基为输入参数在bwt表对interval进行匹配，返回值作为下一个碱基的开始位置
+ * @param bwt bwt表
+ * @param len seq的长度
+ * @param q seq数据
+ * @param x 单个碱基的位置
+ * @param min_intv 最小的interval
+ * @param max_intv 最大的interval，mem算法没有使用到
+ * @param mem
+ * @param tmpvec
+ * @return 下一个碱基的位置
+ */
 int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, uint64_t max_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]) {
     int i, j, c, ret;
     bwtintv_t ik, ok[4];
@@ -395,7 +407,7 @@ int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv,
                 if (curr->n == 0) { // test curr->n>0 to make sure there are no longer matches
                     if (mem->n == 0 || i + 1 < mem->a[mem->n - 1].info >> 32) { // skip contained matches
                         ik = *p;
-                        ik.info |= (uint64_t) (i + 1) << 32;
+                        ik.info |= (uint64_t)(i + 1) << 32;
                         kv_push(bwtintv_t, *mem, ik);
                     }
                 } // otherwise the match is contained in another longer match
@@ -441,7 +453,7 @@ int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int m
             bwt_extend(bwt, &ik, ok, 0);
             if (ok[c].x[2] < max_intv && i - x >= min_len) {
                 *mem = ok[c];
-                mem->info = (uint64_t) x << 32 | (i + 1);
+                mem->info = (uint64_t)x << 32 | (i + 1);
                 return i + 1;
             }
             ik = ok[c];
@@ -507,7 +519,7 @@ void bwt_restore_sa(const char *fn, bwt_t *bwt) {
     xassert(primary == bwt->seq_len, "SA-BWT inconsistency: seq_len is not the same.");
 
     bwt->n_sa = (bwt->seq_len + bwt->sa_intv) / bwt->sa_intv;
-    bwt->sa = (bwtint_t *) calloc(bwt->n_sa, sizeof(bwtint_t));
+    bwt->sa = (bwtint_t *)calloc(bwt->n_sa, sizeof(bwtint_t));
     bwt->sa[0] = -1;
 
     fread_fix(fp, sizeof(bwtint_t) * (bwt->n_sa - 1), bwt->sa + 1);
@@ -519,12 +531,12 @@ bwt_t *bwt_restore_bwt(const char *fn) {
     bwt_t *bwt;
     FILE *fp;
 
-    bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
+    bwt = (bwt_t *)calloc(1, sizeof(bwt_t));
     fp = xopen(fn, "rb");
     err_fseek(fp, 0, SEEK_END);
     //设置bwt数据长度并分配内存空间，size: (length - 40)/4
     bwt->bwt_size = (err_ftell(fp) - sizeof(bwtint_t) * 5) >> 2;
-    bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
+    bwt->bwt = (uint32_t *)calloc(bwt->bwt_size, 4);
     //重置文件句柄到文件头后读取文件内容
     err_fseek(fp, 0, SEEK_SET);
     err_fread_noeof(&bwt->primary, sizeof(bwtint_t), 1, fp);

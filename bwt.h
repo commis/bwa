@@ -47,12 +47,12 @@ typedef uint64_t bwtint_t;
 
 typedef struct {
     bwtint_t primary; // S^{-1}(0), or the primary index of BWT
-    bwtint_t L2[5]; // C(), cumulative count
-    bwtint_t seq_len; // sequence length, equal L2[4]
-    bwtint_t bwt_size; // size of bwt, about seq_len/4
+    bwtint_t L2[5]; // C(), cumulative count ~L2[0]-L2[4]分别对应初始bwt表中，以ACGT为首的interval的索引
+    bwtint_t seq_len; // sequence length ~bwt表总长度
+    bwtint_t bwt_size; // size of bwt, about seq_len/4 ~该表的总比特数
     uint32_t *bwt; // bwt table
     // occurance array, separated to two parts
-    uint32_t cnt_table[256]; //记分表
+    uint32_t cnt_table[256];
     // suffix array
     int sa_intv; //分组大小，必须为2的n次幂
     bwtint_t n_sa; //sa的长度
@@ -82,7 +82,12 @@ typedef struct {
  * called bwt_B0 instead of bwt_B */
 #define bwt_B0(b, k) (bwt_bwt(b, k)>>((~(k)&0xf)<<1)&3)
 
-#define bwt_set_intv(bwt, c, ik) ((ik).x[0] = (bwt)->L2[(int)(c)]+1, (ik).x[2] = (bwt)->L2[(int)(c)+1]-(bwt)->L2[(int)(c)], (ik).x[1] = (bwt)->L2[3-(c)]+1, (ik).info = 0)
+#define bwt_set_intv(bwt, c, ik) ( \
+    (ik).x[0] = (bwt)->L2[(int)(c)]+1, \
+    (ik).x[2] = (bwt)->L2[(int)(c)+1]-(bwt)->L2[(int)(c)], \
+    (ik).x[1] = (bwt)->L2[3-(c)]+1, \
+    (ik).info = 0 \
+    )
 
 #ifdef __cplusplus
 extern "C" {
