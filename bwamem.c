@@ -324,7 +324,7 @@ void mem_print_chain(const bntseq_t *bns, mem_chain_v *chn) {
  * @return 链接过后的chain链
  */
 mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, int len, const uint8_t *seq, void *buf) {
-    int b, e, l_rep;
+    int i, b, e, l_rep;
     int64_t l_pac = bns->l_pac;
     kbtree_t(chn) *tree;
     smem_aux_t *aux;
@@ -338,7 +338,7 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
 
     aux = buf ? (smem_aux_t *)buf : smem_aux_init();
     mem_collect_intv(opt, bwt, len, seq, aux);
-    for (int i = 0, b = e = l_rep = 0; i < aux->mem.n; ++i) { // compute frac_rep
+    for (i = 0, b = e = l_rep = 0; i < aux->mem.n; ++i) { // compute frac_rep
         bwtintv_t *p = &aux->mem.a[i];
         int sb = (p->info >> 32), se = (uint32_t)p->info;
         if (p->x[2] <= opt->max_occ) {
@@ -351,7 +351,7 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
         }
     }
     l_rep += e - b;
-    for (int i = 0; i < aux->mem.n; ++i) {
+    for (i = 0; i < aux->mem.n; ++i) {
         bwtintv_t *p = &aux->mem.a[i];
         int step, count, slen = (uint32_t)p->info - (p->info >> 32); // seed length
         int64_t k;
@@ -397,7 +397,7 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
     __kb_traverse(mem_chain_t, tree, traverse_func);
 #undef traverse_func
 
-    for (int i = 0; i < chain.n; ++i) {
+    for (i = 0; i < chain.n; ++i) {
         chain.a[i].frac_rep = (float)l_rep / len;
     }
     if (bwa_verbose >= 4) {
