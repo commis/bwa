@@ -874,7 +874,7 @@ static inline int cal_max_gap(const mem_opt_t *opt, int qlen) {
  * @param av 该read在reference真实位置的对应信息，返回数据
  */
 void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, const mem_chain_t *c, mem_alnreg_v *av) {
-    int i, k, max_off[2], aw[2]; // aw: actual bandwidth used in extension
+    int max_off[2], aw[2]; // aw: actual bandwidth used in extension
     int64_t l_pac = bns->l_pac, max = 0;
     if (c->n == 0) {
         return;
@@ -883,7 +883,7 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
     int64_t rmax[2];
     rmax[0] = l_pac << 1;
     rmax[1] = 0;
-    for (i = 0; i < c->n; ++i) {
+    for (int i = 0; i < c->n; ++i) {
         int64_t b, e;
         const mem_seed_t *t = &c->seeds[i];
         b = t->rbeg - (t->qbeg + cal_max_gap(opt, t->qbeg));
@@ -910,17 +910,18 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
     assert(c->rid == rid);
 
     uint64_t * srt = malloc(c->n * 8);
-    for (i = 0; i < c->n; ++i) {
+    for (int i = 0; i < c->n; ++i) {
         srt[i] = (uint64_t)
         c->seeds[i].score << 32 | i;
     }
     ks_introsort_64(c->n, srt);
 
     const mem_seed_t *s;
-    for (k = c->n - 1; k >= 0; --k) {
+    for (int k = c->n - 1; k >= 0; --k) {
         mem_alnreg_t *a;
         s = &c->seeds[(uint32_t)srt[k]];
 
+        int i;
         for (i = 0; i < av->n; ++i) { // test whether extension has been made before
             mem_alnreg_t *p = &av->a[i];
             int64_t rd;
@@ -1113,11 +1114,10 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
  *****************************/
 
 static inline int infer_bw(int l1, int l2, int score, int a, int q, int r) {
-    int w;
     if (l1 == l2 && l1 * a - score < (q + r - a) << 1) {
         return 0;
     } // to get equal alignment length, we need at least two gaps
-    w = ((double)((l1 < l2 ? l1 : l2) * a - score - q) / r + 2.);
+    int w = ((double)((l1 < l2 ? l1 : l2) * a - score - q) / r + 2.);
     if (w < abs(l1 - l2)) {
         w = abs(l1 - l2);
     }
@@ -1136,9 +1136,8 @@ static inline int get_rlen(int n_cigar, const uint32_t *cigar) {
 }
 
 static inline void add_cigar(const mem_opt_t *opt, mem_aln_t *p, kstring_t *str, int which) {
-    int i;
     if (p->n_cigar) { // aligned
-        for (i = 0; i < p->n_cigar; ++i) {
+        for (int i = 0; i < p->n_cigar; ++i) {
             int c = p->cigar[i] & 0xf;
             if (!(opt->flag & MEM_F_SOFTCLIP) && !p->is_alt && (c == 3 || c == 4)) {
                 c = which ? 4 : 3;
@@ -1152,9 +1151,7 @@ static inline void add_cigar(const mem_opt_t *opt, mem_aln_t *p, kstring_t *str,
 }
 
 void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq1_t *s, int n, const mem_aln_t *list, int which, const mem_aln_t *m_) {
-    int i, l_name;
     mem_aln_t ptmp = list[which], *p = &ptmp, mtmp, *m = 0; // make a copy of the alignment to convert
-
     if (m_) {
         mtmp = *m_, m = &mtmp;
     }
@@ -1172,7 +1169,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
     p->flag |= m && m->is_rev ? 0x20 : 0; // is mate on the reverse strand
 
     // print up to CIGAR
-    l_name = strlen(s->name);
+    int l_name = strlen(s->name);
     ks_resize(str, str->l + s->l_seq + l_name + (s->qual ? s->l_seq : 0) + 20);
     kputsn(s->name, l_name, str);
     kputc('\t', str); // QNAME
@@ -1221,7 +1218,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
     if (p->flag & 0x100) { // for secondary alignments, don't write SEQ and QUAL
         kputsn("*\t*", 3, str);
     } else if (!p->is_rev) { // the forward strand
-        int i, qb = 0, qe = s->l_seq;
+        int qb = 0, qe = s->l_seq;
         if (p->n_cigar && which && !(opt->flag & MEM_F_SOFTCLIP) && !p->is_alt) { // have cigar && not the primary alignment && not softclip all
             if ((p->cigar[0] & 0xf) == 4 || (p->cigar[0] & 0xf) == 3) {
                 qb += p->cigar[0] >> 4;
@@ -1231,13 +1228,13 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
             }
         }
         ks_resize(str, str->l + (qe - qb) + 1);
-        for (i = qb; i < qe; ++i) {
+        for (int i = qb; i < qe; ++i) {
             str->s[str->l++] = "ACGTN"[(int)s->seq[i]];
         }
         kputc('\t', str);
         if (s->qual) { // printf qual
             ks_resize(str, str->l + (qe - qb) + 1);
-            for (i = qb; i < qe; ++i) {
+            for (int i = qb; i < qe; ++i) {
                 str->s[str->l++] = s->qual[i];
             }
             str->s[str->l] = 0;
@@ -1245,7 +1242,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
             kputc('*', str);
         }
     } else { // the reverse strand
-        int i, qb = 0, qe = s->l_seq;
+        int qb = 0, qe = s->l_seq;
         if (p->n_cigar && which && !(opt->flag & MEM_F_SOFTCLIP) && !p->is_alt) {
             if ((p->cigar[0] & 0xf) == 4 || (p->cigar[0] & 0xf) == 3) {
                 qe -= p->cigar[0] >> 4;
@@ -1255,13 +1252,13 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
             }
         }
         ks_resize(str, str->l + (qe - qb) + 1);
-        for (i = qe - 1; i >= qb; --i) {
+        for (int i = qe - 1; i >= qb; --i) {
             str->s[str->l++] = "TGCAN"[(int)s->seq[i]];
         }
         kputc('\t', str);
         if (s->qual) { // printf qual
             ks_resize(str, str->l + (qe - qb) + 1);
-            for (i = qe - 1; i >= qb; --i) {
+            for (int i = qe - 1; i >= qb; --i) {
                 str->s[str->l++] = s->qual[i];
             }
             str->s[str->l] = 0;
@@ -1294,6 +1291,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
         kputs(bwa_rg_id, str);
     }
     if (!(p->flag & 0x100)) { // not multi-hit
+        int i;
         for (i = 0; i < n; ++i) {
             if (i != which && !(list[i].flag & 0x100)) {
                 break;
@@ -1303,7 +1301,6 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
             kputsn("\tSA:Z:", 6, str);
             for (i = 0; i < n; ++i) {
                 const mem_aln_t *r = &list[i];
-                int k;
                 if (i == which || (r->flag & 0x100)) {
                     continue;
                 } // proceed if: 1) different from the current; 2) not shadowed multi hit
@@ -1313,7 +1310,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
                 kputc(',', str);
                 kputc("+-"[r->is_rev], str);
                 kputc(',', str);
-                for (k = 0; k < r->n_cigar; ++k) {
+                for (int k = 0; k < r->n_cigar; ++k) {
                     kputw(r->cigar[k] >> 4, str);
                     kputc("MIDSH"[r->cigar[k] & 0xf], str);
                 }
@@ -1341,7 +1338,7 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
         kputsn("\tXR:Z:", 6, str);
         tmp = str->l;
         kputs(bns->anns[p->rid].anno, str);
-        for (i = tmp; i < str->l; ++i) { // replace TAB in the comment to SPACE
+        for (int i = tmp; i < str->l; ++i) { // replace TAB in the comment to SPACE
             if (str->s[i] == '\t') {
                 str->s[i] = ' ';
             }
@@ -1440,18 +1437,17 @@ void mem_reorder_primary5(int T, mem_alnreg_v *a) {
  */
 void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, bseq1_t *s, mem_alnreg_v *a, int extra_flag, const mem_aln_t *m) {
     extern char **mem_gen_alt(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, mem_alnreg_v *a, int l_query, const char *query);
-    kstring_t str;
-    kvec_t(mem_aln_t) aa;
-    int k, l;
     char **XA = 0;
-
     if (!(opt->flag & MEM_F_ALL)) {
         XA = mem_gen_alt(opt, bns, pac, a, s->l_seq, s->seq);
     }
+    kvec_t(mem_aln_t) aa;
     kv_init(aa);
+
+    kstring_t str;
     str.l = str.m = 0;
     str.s = 0;
-    for (k = l = 0; k < a->n; ++k) {
+    for (int k = 0, l = 0; k < a->n; ++k) {
         mem_alnreg_t *p = &a->a[k];
         mem_aln_t *q;
         if (p->score < opt->T) {
@@ -1485,17 +1481,17 @@ void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, 
         t.flag |= extra_flag;
         mem_aln2sam(opt, bns, &str, s, 1, &t, 0, m);
     } else {
-        for (k = 0; k < aa.n; ++k) {
+        for (int k = 0; k < aa.n; ++k) {
             mem_aln2sam(opt, bns, &str, s, aa.n, aa.a, k, m);
         }
-        for (k = 0; k < aa.n; ++k) {
+        for (int k = 0; k < aa.n; ++k) {
             free(aa.a[k].cigar);
         }
         free(aa.a);
     }
     s->sam = str.s;
     if (XA) {
-        for (k = 0; k < a->n; ++k) {
+        for (int k = 0; k < a->n; ++k) {
             free(XA[k]);
         }
         free(XA);
