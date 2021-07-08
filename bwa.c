@@ -81,8 +81,8 @@ static inline void kseq2bseq1(const kseq_t *ks, bseq1_t *s) { // TODO: it would 
 
 //读取待比对基于序列文件的数据
 bseq1_t *bseq_read(int chunk_size, int *n_, void *ks1_, void *ks2_) {
-    kseq_t *ks = (kseq_t *) ks1_;
-    kseq_t *ks2 = (kseq_t *) ks2_;
+    kseq_t *ks = (kseq_t *)ks1_;
+    kseq_t *ks2 = (kseq_t *)ks2_;
     int size = 0, m, n;
     bseq1_t *seqs;
     m = n = 0;
@@ -119,10 +119,18 @@ bseq1_t *bseq_read(int chunk_size, int *n_, void *ks1_, void *ks2_) {
     return seqs;
 }
 
+/**
+ * 将seq按名称进行分组
+ * @param n seq组的长度
+ * @param seqs seq的指针
+ * @param m 分组中seq的长度
+ * @param sep 分组中seq的指针数组
+ */
 void bseq_classify(int n, bseq1_t *seqs, int m[2], bseq1_t *sep[2]) {
     int i, has_last;
     kvec_t(bseq1_t) a[2] = {{0, 0, 0},
                             {0, 0, 0}};
+
     for (i = 1, has_last = 1; i < n; ++i) {
         if (has_last) {
             if (strcmp(seqs[i].name, seqs[i - 1].name) == 0) {
@@ -137,6 +145,7 @@ void bseq_classify(int n, bseq1_t *seqs, int m[2], bseq1_t *sep[2]) {
     }
     if (has_last)
         kv_push(bseq1_t, a[0], seqs[i - 1]);
+
     sep[0] = a[0].a, m[0] = a[0].n;
     sep[1] = a[1].a, m[1] = a[1].n;
 }
@@ -209,25 +218,25 @@ uint32_t *bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins, 
     } else {
         int w, max_gap, max_ins, max_del, min_w;
         // set the band-width
-        max_ins = (int) ((double) (((l_query + 1) >> 1) * mat[0] - o_ins) / e_ins + 1.);
-        max_del = (int) ((double) (((l_query + 1) >> 1) * mat[0] - o_del) / e_del + 1.);
+        max_ins = (int)((double)(((l_query + 1) >> 1) * mat[0] - o_ins) / e_ins + 1.);
+        max_del = (int)((double)(((l_query + 1) >> 1) * mat[0] - o_del) / e_del + 1.);
         max_gap = max_ins > max_del ? max_ins : max_del;
         max_gap = max_gap > 1 ? max_gap : 1;
-        w = (max_gap + abs((int) rlen - l_query) + 1) >> 1;
+        w = (max_gap + abs((int)rlen - l_query) + 1) >> 1;
         w = w < w_ ? w : w_;
-        min_w = abs((int) rlen - l_query) + 3;
+        min_w = abs((int)rlen - l_query) + 3;
         w = w > min_w ? w : min_w;
         // NW alignment
         if (bwa_verbose >= 4) {
             printf("* Global bandwidth: %d\n", w);
             printf("* Global ref:   ");
             for (i = 0; i < rlen; ++i) {
-                putchar("ACGTN"[(int) rseq[i]]);
+                putchar("ACGTN"[(int)rseq[i]]);
             }
             putchar('\n');
             printf("* Global query: ");
             for (i = 0; i < l_query; ++i) {
-                putchar("ACGTN"[(int) query[i]]);
+                putchar("ACGTN"[(int)query[i]]);
             }
             putchar('\n');
         }
@@ -236,11 +245,11 @@ uint32_t *bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins, 
     if (NM && n_cigar) {// compute NM and MD
         int k, x, y, u, n_mm = 0, n_gap = 0;
         str.l = str.m = *n_cigar * 4;
-        str.s = (char *) cigar; // append MD to CIGAR
+        str.s = (char *)cigar; // append MD to CIGAR
         int2base = rb < l_pac ? "ACGTN" : "TGCAN";
         for (k = 0, x = y = u = 0; k < *n_cigar; ++k) {
             int op, len;
-            cigar = (uint32_t *) str.s;
+            cigar = (uint32_t *)str.s;
             op = cigar[k] & 0xf, len = cigar[k] >> 4;
             if (op == 0) { // match
                 for (i = 0; i < len; ++i) {
@@ -273,7 +282,7 @@ uint32_t *bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins, 
         kputw(u, &str);
         kputc(0, &str);
         *NM = n_mm + n_gap;
-        cigar = (uint32_t *) str.s;
+        cigar = (uint32_t *)str.s;
     }
     if (rb >= l_pac) { // reverse back query
         for (i = 0; i < l_query >> 1; ++i) {
@@ -366,7 +375,8 @@ bwaidx_t *bwa_idx_load_from_disk(const char *hint, int which) {
         }
         if (which & BWA_IDX_PAC) {
             idx->pac = calloc(idx->bns->l_pac / 4 + 1, 1);
-            err_fread_noeof(idx->pac, 1, idx->bns->l_pac / 4 + 1, idx->bns->fp_pac); // concatenated 2-bit encoded sequence
+            err_fread_noeof(idx->pac, 1, idx->bns->l_pac / 4 + 1,
+                idx->bns->fp_pac); // concatenated 2-bit encoded sequence
             err_fclose(idx->bns->fp_pac);
             idx->bns->fp_pac = 0;
         }
@@ -414,10 +424,10 @@ int bwa_mem2idx(int64_t l_mem, uint8_t *mem, bwaidx_t *idx) {
     memcpy(idx->bwt, mem + k, x);
     k += x;
     x = idx->bwt->bwt_size * 4;
-    idx->bwt->bwt = (uint32_t *) (mem + k);
+    idx->bwt->bwt = (uint32_t * )(mem + k);
     k += x;
     x = idx->bwt->n_sa * sizeof(bwtint_t);
-    idx->bwt->sa = (bwtint_t *) (mem + k);
+    idx->bwt->sa = (bwtint_t *)(mem + k);
     k += x;
 
     // generate idx->bns and idx->pac
@@ -426,19 +436,19 @@ int bwa_mem2idx(int64_t l_mem, uint8_t *mem, bwaidx_t *idx) {
     memcpy(idx->bns, mem + k, x);
     k += x;
     x = idx->bns->n_holes * sizeof(bntamb1_t);
-    idx->bns->ambs = (bntamb1_t *) (mem + k);
+    idx->bns->ambs = (bntamb1_t *)(mem + k);
     k += x;
     x = idx->bns->n_seqs * sizeof(bntann1_t);
     idx->bns->anns = malloc(x);
     memcpy(idx->bns->anns, mem + k, x);
     k += x;
     for (i = 0; i < idx->bns->n_seqs; ++i) {
-        idx->bns->anns[i].name = (char *) (mem + k);
+        idx->bns->anns[i].name = (char *)(mem + k);
         k += strlen(idx->bns->anns[i].name) + 1;
-        idx->bns->anns[i].anno = (char *) (mem + k);
+        idx->bns->anns[i].anno = (char *)(mem + k);
         k += strlen(idx->bns->anns[i].anno) + 1;
     }
-    idx->pac = (uint8_t *) (mem + k);
+    idx->pac = (uint8_t * )(mem + k);
     k += idx->bns->l_pac / 4 + 1;
     assert(k == l_mem);
 
@@ -534,7 +544,8 @@ void bwa_print_sam_hdr(const bntseq_t *bns, const char *hdr_line) {
             }
         }
     } else if (n_SQ != bns->n_seqs && bwa_verbose >= 2) {
-        fprintf(stderr, "[W::%s] %d @SQ lines provided with -H; %d sequences in the index. Continue anyway.\n", __func__, n_SQ,
+        fprintf(stderr, "[W::%s] %d @SQ lines provided with -H; %d sequences in the index. Continue anyway.\n",
+            __func__, n_SQ,
             bns->n_seqs);
     }
     if (hdr_line) {
@@ -578,7 +589,8 @@ char *bwa_set_rg(const char *s) {
     }
     if (strstr(s, "\t") != NULL) {
         if (bwa_verbose >= 1) {
-            fprintf(stderr, "[E::%s] the read group line contained literal <tab> characters -- replace with escaped tabs: \\t\n",
+            fprintf(stderr,
+                "[E::%s] the read group line contained literal <tab> characters -- replace with escaped tabs: \\t\n",
                 __func__);
         }
         goto err_set_rg;

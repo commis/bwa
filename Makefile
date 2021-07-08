@@ -35,7 +35,8 @@ bwamem-lite:libbwa.a example.o
 	$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)
 
 libbwa.a:$(LOBJS)
-	$(AR) -csru $@ $(LOBJS)
+	#$(AR) -csru $@ $(LOBJS)
+	$(AR) -csr $@ $(LOBJS)
 
 clean:
 	rm -f gmon.out *.o a.out $(PROG) *~ *.a $(OUTPUT)/*.*

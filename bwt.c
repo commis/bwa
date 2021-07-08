@@ -54,7 +54,9 @@ void bwt_gen_cnt_table(bwt_t *bwt) {
 }
 
 // compute inverse CSA
-static inline bwtint_t bwt_invPsi(const bwt_t *bwt, bwtint_t k) {
+static inline bwtint_t
+
+bwt_invPsi(const bwt_t *bwt, bwtint_t k) {
     bwtint_t x = k - (k > bwt->primary);
     x = bwt_B0(bwt, x);
     x = bwt->L2[x] + bwt_occ(bwt, k, x);
@@ -131,11 +133,13 @@ bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c) {
     // calculate Occ up to the last k/32
     end = p + (((k >> 5) - ((k & ~OCC_INTV_MASK) >> 5)) << 1);
     for (; p < end; p += 2) {
-        n += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
+        n += __occ_aux((uint64_t)
+        p[0] << 32 | p[1], c);
     }
 
     // calculate Occ
-    n += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
+    n += __occ_aux(((uint64_t)
+    p[0] << 32 | p[1]) &~((1ull << ((~k & 31) << 1)) - 1), c);
     if (c == 0) {
         n -= ~k & 31;
     } // corrected for the masked bits
@@ -165,10 +169,12 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         // calculate *ok
         j = k >> 5 << 5;
         for (i = k / OCC_INTERVAL * OCC_INTERVAL; i < j; i += 32, p += 2) {
-            n += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
+            n += __occ_aux((uint64_t)
+            p[0] << 32 | p[1], c);
         }
         m = n;
-        n += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
+        n += __occ_aux(((uint64_t)
+        p[0] << 32 | p[1]) &~((1ull << ((~k & 31) << 1)) - 1), c);
         if (c == 0) {
             n -= ~k & 31;
         } // corrected for the masked bits
@@ -176,9 +182,11 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         // calculate *ol
         j = l >> 5 << 5;
         for (; i < j; i += 32, p += 2) {
-            m += __occ_aux((uint64_t)p[0] << 32 | p[1], c);
+            m += __occ_aux((uint64_t)
+            p[0] << 32 | p[1], c);
         }
-        m += __occ_aux(((uint64_t)p[0] << 32 | p[1]) & ~((1ull << ((~l & 31) << 1)) - 1), c);
+        m += __occ_aux(((uint64_t)
+        p[0] << 32 | p[1]) &~((1ull << ((~l & 31) << 1)) - 1), c);
         if (c == 0) {
             m -= ~l & 31;
         } // corrected for the masked bits
@@ -311,7 +319,13 @@ int bwt_match_exact_alt(const bwt_t *bwt, int len, const ubyte_t *str, bwtint_t 
 /*********************
  * Bidirectional BWT *
  *********************/
-
+/**
+ * BWT转换
+ * @param bwt bwt表
+ * @param ik 输入
+ * @param ok 输出
+ * @param is_back 前向/后向
+ */
 void bwt_extend(const bwt_t *bwt, const bwtintv_t *ik, bwtintv_t ok[4], int is_back) {
     bwtint_t tk[4], tl[4];
     bwt_2occ4(bwt, ik->x[!is_back] - 1, ik->x[!is_back] - 1 + ik->x[2], tk, tl);
@@ -325,10 +339,13 @@ void bwt_extend(const bwt_t *bwt, const bwtintv_t *ik, bwtintv_t ok[4], int is_b
     ok[0].x[is_back] = ok[1].x[is_back] + ok[1].x[2];
 }
 
+/**
+ * 将p->a数组反向排列
+ * @param p 待处理数据
+ */
 static void bwt_reverse_intvs(bwtintv_v *p) {
     if (p->n > 1) {
-        int j;
-        for (j = 0; j < p->n >> 1; ++j) {
+        for (int j = 0; j < p->n >> 1; ++j) {
             bwtintv_t tmp = p->a[p->n - 1 - j];
             p->a[p->n - 1 - j] = p->a[j];
             p->a[j] = tmp;
@@ -350,36 +367,40 @@ static void bwt_reverse_intvs(bwtintv_v *p) {
  * @return 下一个碱基的位置
  */
 int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, uint64_t max_intv, bwtintv_v *mem, bwtintv_v *tmpvec[2]) {
-    int i, j, c, ret;
-    bwtintv_t ik, ok[4];
+    int i, j;
+    bwtintv_t ik, ok[4]; //ik为输入，ok为输出即A/C/G/T对于的数据
     bwtintv_v a[2], *prev, *curr, *swap;
 
     mem->n = 0;
     if (q[x] > 3) {
         return x + 1;
     }
+    // the interval size should be at least 1
     if (min_intv < 1) {
         min_intv = 1;
-    } // the interval size should be at least 1
+    }
     kv_init(a[0]);
     kv_init(a[1]);
     prev = tmpvec && tmpvec[0] ? tmpvec[0] : &a[0]; // use the temporary vector if provided
     curr = tmpvec && tmpvec[1] ? tmpvec[1] : &a[1];
+
     bwt_set_intv(bwt, q[x], ik); // the initial interval of a single base
     ik.info = x + 1;
 
+    //1. 前向(右)匹配查找，找到最右端无法匹配的碱基索引
     for (i = x + 1, curr->n = 0; i < len; ++i) { // forward search
         if (ik.x[2] < max_intv) { // an interval small enough
             kv_push(bwtintv_t, *curr, ik);
             break;
         } else if (q[i] < 4) { // an A/C/G/T base
-            c = 3 - q[i]; // complement of q[i]
+            int c = 3 - q[i]; // complement of q[i]
             bwt_extend(bwt, &ik, ok, 0);
             if (ok[c].x[2] != ik.x[2]) { // change of the interval size
                 kv_push(bwtintv_t, *curr, ik);
+                // the interval size is too small to be extended further
                 if (ok[c].x[2] < min_intv) {
                     break;
-                } // the interval size is too small to be extended further
+                }
             }
             ik = ok[c];
             ik.info = i + 1;
@@ -390,14 +411,16 @@ int bwt_smem1a(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv,
     }
     if (i == len)
         kv_push(bwtintv_t, *curr, ik); // push the last interval if we reach the end
+
     bwt_reverse_intvs(curr); // s.t. smaller intervals (i.e. longer matches) visited first
-    ret = curr->a[0].info; // this will be the returned value
+    int ret = curr->a[0].info; // this will be the returned value
     swap = curr;
     curr = prev;
     prev = swap;
 
+    //2. 后向(左)匹配查找
     for (i = x - 1; i >= -1; --i) { // backward search for MEMs
-        c = i < 0 ? -1 : q[i] < 4 ? q[i] : -1; // c==-1 if i<0 or q[i] is an ambiguous base
+        int c = i < 0 ? -1 : q[i] < 4 ? q[i] : -1; // c==-1 if i<0 or q[i] is an ambiguous base
         for (j = 0, curr->n = 0; j < prev->n; ++j) {
             bwtintv_t *p = &prev->a[j];
             if (c >= 0 && ik.x[2] >= max_intv) {
@@ -439,21 +462,20 @@ int bwt_smem1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_intv, 
 }
 
 int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int min_len, int max_intv, bwtintv_t *mem) {
-    int i, c;
     bwtintv_t ik, ok[4];
-
     memset(mem, 0, sizeof(bwtintv_t));
     if (q[x] > 3) {
         return x + 1;
     }
     bwt_set_intv(bwt, q[x], ik); // the initial interval of a single base
-    for (i = x + 1; i < len; ++i) { // forward search
+    for (int i = x + 1; i < len; ++i) { // forward search
         if (q[i] < 4) { // an A/C/G/T base
-            c = 3 - q[i]; // complement of q[i]
+            int c = 3 - q[i]; // complement of q[i]
             bwt_extend(bwt, &ik, ok, 0);
             if (ok[c].x[2] < max_intv && i - x >= min_len) {
                 *mem = ok[c];
-                mem->info = (uint64_t)x << 32 | (i + 1);
+                mem->info = (uint64_t)
+                x << 32 | (i + 1);
                 return i + 1;
             }
             ik = ok[c];

@@ -90,8 +90,8 @@ typedef struct {
 
 #define bwt_set_intv(bwt, c, ik) ( \
     (ik).x[0] = (bwt)->L2[(int)(c)]+1, \
-    (ik).x[2] = (bwt)->L2[(int)(c)+1]-(bwt)->L2[(int)(c)], \
     (ik).x[1] = (bwt)->L2[3-(c)]+1, \
+    (ik).x[2] = (bwt)->L2[(int)(c)+1]-(bwt)->L2[(int)(c)], \
     (ik).info = 0 \
     )
 

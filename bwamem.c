@@ -123,13 +123,17 @@ mem_opt_t *mem_opt_init() {
 
 KSORT_INIT(mem_intv, bwtintv_t, intv_lt)
 
+//存储smems的结构
 typedef struct {
+    /**
+     * mem 入栈参数
+     * mem1 参与运算的中间参数
+     */
     bwtintv_v mem, mem1, *tmpv[2];
 } smem_aux_t;
 
 static smem_aux_t *smem_aux_init() {
-    smem_aux_t *a;
-    a = calloc(1, sizeof(smem_aux_t));
+    smem_aux_t *a = calloc(1, sizeof(smem_aux_t));
     a->tmpv[0] = calloc(1, sizeof(bwtintv_v));
     a->tmpv[1] = calloc(1, sizeof(bwtintv_v));
     return a;
@@ -146,15 +150,15 @@ static void smem_aux_destroy(smem_aux_t *a) {
 }
 
 /**
- * 在bwt上找到seq对应的所有的MEMS
+ * 在bwt上找到seq对应的所有的SMEMS
  * @param opt 执行参数值
  * @param bwt bwt表
  * @param len seq的长度
  * @param seq seq数据
- * @param a 存储smems的指针
+ * @param a 存储SMEMS的指针
  */
 static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, const uint8_t *seq, smem_aux_t *a) {
-    int i, k, x = 0, old_n;
+    int x = 0;
     int start_width = 1;
     int split_len = (int)(opt->min_seed_len * opt->split_factor + .499);
     a->mem.n = 0;
@@ -162,7 +166,7 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
     while (x < len) {
         if (seq[x] < 4) {
             x = bwt_smem1(bwt, len, seq, x, start_width, &a->mem1, a->tmpv);
-            for (i = 0; i < a->mem1.n; ++i) {
+            for (int i = 0; i < a->mem1.n; ++i) {
                 bwtintv_t *p = &a->mem1.a[i];
                 int slen = (uint32_t)p->info - (p->info >> 32); // seed length
                 if (slen >= opt->min_seed_len)
@@ -173,15 +177,15 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
         }
     }
     // second pass: find MEMs inside a long SMEM
-    old_n = a->mem.n;
-    for (k = 0; k < old_n; ++k) {
+    int old_n = a->mem.n;
+    for (int k = 0; k < old_n; ++k) {
         bwtintv_t *p = &a->mem.a[k];
         int start = p->info >> 32, end = (int32_t)p->info;
         if (end - start < split_len || p->x[2] > opt->split_width) {
             continue;
         }
         bwt_smem1(bwt, len, seq, (start + end) >> 1, p->x[2] + 1, &a->mem1, a->tmpv);
-        for (i = 0; i < a->mem1.n; ++i) {
+        for (int i = 0; i < a->mem1.n; ++i) {
             if ((uint32_t)a->mem1.a[i].info - (a->mem1.a[i].info >> 32) >= opt->min_seed_len)
                 kv_push(bwtintv_t, a->mem, a->mem1.a[i]);
         }
@@ -198,7 +202,7 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
                         kv_push(bwtintv_t, a->mem, m);
                 } else { // for now, we never come to this block which is slower
                     x = bwt_smem1a(bwt, len, seq, x, start_width, opt->max_mem_intv, &a->mem1, a->tmpv);
-                    for (i = 0; i < a->mem1.n; ++i)
+                    for (int i = 0; i < a->mem1.n; ++i)
                         kv_push(bwtintv_t, a->mem, a->mem1.a[i]);
                 }
             } else {
@@ -215,13 +219,13 @@ static void mem_collect_intv(const mem_opt_t *opt, const bwt_t *bwt, int len, co
  ************/
 
 typedef struct {
-    int64_t rbeg;
-    int32_t qbeg, len;
-    int score;
+    int64_t rbeg; //reference的开始位置
+    int32_t qbeg, len; //query的开始位置，len值seq的长度
+    int score; //seed的得分
 } mem_seed_t; // unaligned memory
 
 typedef struct {
-    int n, m, first, rid;
+    int n, m, first, rid; //n种子的长度，m控制种子链的内存分配
     uint32_t w: 29, kept: 2, is_alt: 1;
     float frac_rep;
     int64_t pos;
@@ -229,7 +233,7 @@ typedef struct {
 } mem_chain_t;
 
 typedef struct {
-    size_t n, m;
+    size_t n, m; //n mem_chain的长度，m控制内存分配
     mem_chain_t *a;
 } mem_chain_v;
 
@@ -266,28 +270,33 @@ static int test_and_merge(const mem_opt_t *opt, int64_t l_pac, mem_chain_t *c, c
     return 0; // request to add a new chain
 }
 
+/**
+ * 计算mem_chain链的weight
+ * @param c mem_chain_t参数
+ * @return weight
+ */
 int mem_chain_weight(const mem_chain_t *c) {
     int64_t end;
-    int j, w = 0, tmp;
+    int j, w = 0;
     for (j = 0, end = 0; j < c->n; ++j) {
         const mem_seed_t *s = &c->seeds[j];
         if (s->qbeg >= end) {
             w += s->len;
         } else if (s->qbeg + s->len > end) {
-            w += s->qbeg + s->len - end;
+            w += (s->qbeg + s->len - end);
         }
-        end = end > s->qbeg + s->len ? end : s->qbeg + s->len;
+        end = end > (s->qbeg + s->len) ? end : (s->qbeg + s->len);
     }
-    tmp = w;
+    int tmp = w;
     w = 0;
     for (j = 0, end = 0; j < c->n; ++j) {
         const mem_seed_t *s = &c->seeds[j];
         if (s->rbeg >= end) {
             w += s->len;
         } else if (s->rbeg + s->len > end) {
-            w += s->rbeg + s->len - end;
+            w += (s->rbeg + s->len - end);
         }
-        end = end > s->rbeg + s->len ? end : s->rbeg + s->len;
+        end = end > (s->rbeg + s->len) ? end : (s->rbeg + s->len);
     }
     w = w < tmp ? w : tmp;
     return w < 1 << 30 ? w : (1 << 30) - 1;
@@ -296,7 +305,7 @@ int mem_chain_weight(const mem_chain_t *c) {
 void mem_print_chain(const bntseq_t *bns, mem_chain_v *chn) {
     int i, j;
     for (i = 0; i < chn->n; ++i) {
-        mem_chain_t *p = &chn->a[i];
+        mem_chain_t * p = &chn->a[i];
         err_printf("* Found CHAIN(%d): n=%d; weight=%d", i, p->n, mem_chain_weight(p));
         for (j = 0; j < p->n; ++j) {
             bwtint_t pos;
@@ -324,9 +333,9 @@ void mem_print_chain(const bntseq_t *bns, mem_chain_v *chn) {
  * @return 链接过后的chain链
  */
 mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, int len, const uint8_t *seq, void *buf) {
-    int i, b, e, l_rep;
+    int i, b, e, l_rep; //b开始位置，e结束位置
     int64_t l_pac = bns->l_pac;
-    kbtree_t(chn) *tree;
+    kbtree_t(chn) * tree;
     smem_aux_t *aux;
 
     mem_chain_v chain;
@@ -338,6 +347,7 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
 
     aux = buf ? (smem_aux_t *)buf : smem_aux_init();
     mem_collect_intv(opt, bwt, len, seq, aux);
+
     for (i = 0, b = e = l_rep = 0; i < aux->mem.n; ++i) { // compute frac_rep
         bwtintv_t *p = &aux->mem.a[i];
         int sb = (p->info >> 32), se = (uint32_t)p->info;
@@ -360,14 +370,16 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
         for (k = count = 0; k < p->x[2] && count < opt->max_occ; k += step, ++count) {
             mem_chain_t tmp, *lower, *upper;
             mem_seed_t s;
-            int rid, to_add = 0;
             s.rbeg = tmp.pos = bwt_sa(bwt, p->x[0] + k); // this is the base coordinate in the forward-reverse reference
             s.qbeg = p->info >> 32;
             s.score = s.len = slen;
-            rid = bns_intv2rid(bns, s.rbeg, s.rbeg + s.len);
+            // bridging multiple reference sequences or the forward-reverse boundary; TODO: split the seed; don't discard it!!!
+            int rid = bns_intv2rid(bns, s.rbeg, s.rbeg + s.len);
             if (rid < 0) {
                 continue;
-            } // bridging multiple reference sequences or the forward-reverse boundary; TODO: split the seed; don't discard it!!!
+            }
+
+            int to_add = 0;
             if (kb_size(tree)) {
                 kb_intervalp(chn, tree, &tmp, &lower, &upper); // find the closest chain
                 if (!lower || !test_and_merge(opt, l_pac, lower, &s, rid)) {
@@ -419,15 +431,23 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
 
 KSORT_INIT(mem_flt, mem_chain_t, flt_lt)
 
+/**
+ * 过滤掉种子链中weight比较低的种子链
+ * @param opt 程序执行参数
+ * @param n_chn mem_chain长度
+ * @param a mem_chain数组
+ * @return mem_chain过滤，0-不需要过滤
+ */
 int mem_chain_flt(const mem_opt_t *opt, int n_chn, mem_chain_t *a) {
-    int i, k;
     kvec_t(int) chains = {0, 0, 0}; // this keeps int indices of the non-overlapping chains
+    // no need to filter
     if (n_chn == 0) {
         return 0;
-    } // no need to filter
+    }
+    int i, k;
     // compute the weight of each chain and drop chains with small weight
     for (i = k = 0; i < n_chn; ++i) {
-        mem_chain_t *c = &a[i];
+        mem_chain_t * c = &a[i];
         c->first = -1;
         c->kept = 0;
         c->w = mem_chain_weight(c);
@@ -469,7 +489,7 @@ int mem_chain_flt(const mem_opt_t *opt, int n_chn, mem_chain_t *a) {
         }
     }
     for (i = 0; i < chains.n; ++i) {
-        mem_chain_t *c = &a[chains.a[i]];
+        mem_chain_t * c = &a[chains.a[i]];
         if (c->first >= 0) {
             a[c->first].kept = 1;
         }
@@ -489,7 +509,7 @@ int mem_chain_flt(const mem_opt_t *opt, int n_chn, mem_chain_t *a) {
         }
     }
     for (i = k = 0; i < n_chn; ++i) { // free discarded chains
-        mem_chain_t *c = &a[i];
+        mem_chain_t * c = &a[i];
         if (c->kept == 0) {
             free(c->seeds);
         } else {
@@ -744,26 +764,35 @@ int mem_mark_primary_se(const mem_opt_t *opt, int n, mem_alnreg_t *a, int64_t id
 #define MEM_MINSC_COEF 5.5f
 #define MEM_SEEDSW_COEF 0.05f
 
+/**
+ * 计算种子的得分
+ * @param opt 程序参数
+ * @param bns reference的bns信息
+ * @param pac reference的pac信息
+ * @param l_query query的长度
+ * @param query query数组
+ * @param s 种子
+ * @return 得分
+ */
 int mem_seed_sw(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, const mem_seed_t *s) {
-    int qb, qe, rid;
-    int64_t rb, re, mid, l_pac = bns->l_pac;
-    uint8_t *rseq = 0;
-    kswr_t x;
-
+    // the seed is longer than the max-extend; no need to do SW
     if (s->len >= MEM_SHORT_LEN) {
         return -1;
-    } // the seed is longer than the max-extend; no need to do SW
-    qb = s->qbeg, qe = s->qbeg + s->len;
-    rb = s->rbeg, re = s->rbeg + s->len;
-    mid = (rb + re) >> 1;
+    }
+    int qb = s->qbeg, qe = s->qbeg + s->len; //query中的开始/结束位置
     qb -= MEM_SHORT_EXT;
     qb = qb > 0 ? qb : 0;
     qe += MEM_SHORT_EXT;
     qe = qe < l_query ? qe : l_query;
+
+    int64_t l_pac = bns->l_pac;
+    int64_t rb = s->rbeg, re = s->rbeg + s->len; //reference中的开始/结束位置
+    int64_t mid = (rb + re) >> 1;
     rb -= MEM_SHORT_EXT;
     rb = rb > 0 ? rb : 0;
     re += MEM_SHORT_EXT;
     re = re < l_pac << 1 ? re : l_pac << 1;
+
     if (rb < l_pac && l_pac < re) {
         if (mid < l_pac) {
             re = l_pac;
@@ -775,22 +804,39 @@ int mem_seed_sw(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, i
         return -1;
     } // the seed seems good enough; no need to do SW
 
+    int rid;
+    uint8_t *rseq = 0;
     rseq = bns_fetch_seq(bns, pac, &rb, mid, &re, &rid);
-    x = ksw_align2(qe - qb, (uint8_t *)query + qb, re - rb, rseq, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins,
-        opt->e_ins,
+
+    kswr_t x;
+    //比较query和reference的匹配质量
+    x = ksw_align2(qe - qb, (uint8_t *)query + qb, re - rb, rseq, 5,
+        opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins,
         KSW_XSTART, 0);
     free(rseq);
     return x.score;
 }
 
+/**
+ * 在过滤完chain的基础上，根据得分对seeds进行逐个过滤
+ * @param opt 程序允许参数
+ * @param bns reference的bns信息
+ * @param pac reference的pac信息
+ * @param l_query query的长度
+ * @param query query数组
+ * @param n_chn chain的长度
+ * @param a chain数组
+ */
 void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, int n_chn, mem_chain_t *a) {
     double min_l = opt->min_chain_weight ? MEM_HSP_COEF * opt->min_chain_weight : MEM_MINSC_COEF * log(l_query);
-    int i, j, k, min_HSP_score = (int)(opt->a * min_l + .499);
+    // don't run the following for short reads
     if (min_l > MEM_SEEDSW_COEF * l_query) {
         return;
-    } // don't run the following for short reads
-    for (i = 0; i < n_chn; ++i) {
-        mem_chain_t *c = &a[i];
+    }
+    int j, k;
+    int min_HSP_score = (int)(opt->a * min_l + .499);
+    for (int i = 0; i < n_chn; ++i) {
+        mem_chain_t * c = &a[i];
         for (j = k = 0; j < c->n; ++j) {
             mem_seed_t *s = &c->seeds[j];
             s->score = mem_seed_sw(opt, bns, pac, l_query, query, s);
@@ -799,7 +845,7 @@ void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint
                 c->seeds[k++] = *s;
             }
         }
-        c->n = k;
+        c->n = k; //更新实际有效seeds的长度
     }
 }
 
@@ -817,17 +863,24 @@ static inline int cal_max_gap(const mem_opt_t *opt, int qlen) {
 
 #define MAX_BAND_TRY  2
 
+/**
+ * 将chain映射到真实的reference区域region
+ * @param opt 程序运行参数
+ * @param bns reference的bns信息
+ * @param pac reference的pac信息
+ * @param l_query query的长度
+ * @param query query的数组
+ * @param c mem_chain数组
+ * @param av 该read在reference真实位置的对应信息，返回数据
+ */
 void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, const mem_chain_t *c, mem_alnreg_v *av) {
-    int i, k, rid, max_off[2], aw[2]; // aw: actual bandwidth used in extension
-    int64_t l_pac = bns->l_pac, rmax[2], tmp, max = 0;
-    const mem_seed_t *s;
-    uint8_t *rseq = 0;
-    uint64_t *srt;
-
+    int i, k, max_off[2], aw[2]; // aw: actual bandwidth used in extension
+    int64_t l_pac = bns->l_pac, max = 0;
     if (c->n == 0) {
         return;
     }
     // get the max possible span
+    int64_t rmax[2];
     rmax[0] = l_pac << 1;
     rmax[1] = 0;
     for (i = 0; i < c->n; ++i) {
@@ -851,15 +904,19 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
         }
     }
     // retrieve the reference sequence
+    int rid;
+    uint8_t *rseq = 0;
     rseq = bns_fetch_seq(bns, pac, &rmax[0], c->seeds[0].rbeg, &rmax[1], &rid);
     assert(c->rid == rid);
 
-    srt = malloc(c->n * 8);
+    uint64_t * srt = malloc(c->n * 8);
     for (i = 0; i < c->n; ++i) {
-        srt[i] = (uint64_t)c->seeds[i].score << 32 | i;
+        srt[i] = (uint64_t)
+        c->seeds[i].score << 32 | i;
     }
     ks_introsort_64(c->n, srt);
 
+    const mem_seed_t *s;
     for (k = c->n - 1; k >= 0; --k) {
         mem_alnreg_t *a;
         s = &c->seeds[(uint32_t)srt[k]];
@@ -918,9 +975,8 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
                 continue;
             }
             if (bwa_verbose >= 4) {
-                printf(
-                    "** Seed(%d) might lead to a different alignment even though it is contained. Extension will be performed.\n",
-                    k);
+                printf("** Seed(%d) might lead to a different alignment even though it is contained. "
+                       "Extension will be performed.\n", k);
             }
         }
 
@@ -931,8 +987,8 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
         a->rid = c->rid;
 
         if (bwa_verbose >= 4) {
-            err_printf("** ---> Extending from seed(%d) [%ld;%ld,%ld] @ %s <---\n", k, (long)s->len, (long)s->qbeg,
-                (long)s->rbeg, bns->anns[c->rid].name);
+            err_printf("** ---> Extending from seed(%d) [%ld;%ld,%ld] @ %s <---\n",
+                k, (long)s->len, (long)s->qbeg, (long)s->rbeg, bns->anns[c->rid].name);
         }
         if (s->qbeg) { // left extension
             uint8_t *rs, *qs;
@@ -941,7 +997,7 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
             for (i = 0; i < s->qbeg; ++i) {
                 qs[i] = query[s->qbeg - 1 - i];
             }
-            tmp = s->rbeg - rmax[0];
+            int tmp = s->rbeg - rmax[0];
             rs = malloc(tmp);
             for (i = 0; i < tmp; ++i) {
                 rs[i] = rseq[tmp - 1 - i];
@@ -950,25 +1006,23 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
                 int prev = a->score;
                 aw[0] = opt->w << i;
                 if (bwa_verbose >= 4) {
-                    int j;
                     printf("*** Left ref:   ");
-                    for (j = 0; j < tmp; ++j) {
+                    for (int j = 0; j < tmp; ++j) {
                         putchar("ACGTN"[(int)rs[j]]);
                     }
                     putchar('\n');
                     printf("*** Left query: ");
-                    for (j = 0; j < s->qbeg; ++j) {
+                    for (int j = 0; j < s->qbeg; ++j) {
                         putchar("ACGTN"[(int)qs[j]]);
                     }
                     putchar('\n');
                 }
                 a->score = ksw_extend2(s->qbeg, qs, tmp, rs, 5, opt->mat, opt->o_del, opt->e_del, opt->o_ins,
-                    opt->e_ins, aw[0],
-                    opt->pen_clip5, opt->zdrop, s->len * opt->a, &qle, &tle, &gtle, &gscore, &max_off[0]);
+                    opt->e_ins, aw[0], opt->pen_clip5, opt->zdrop, s->len * opt->a,
+                    &qle, &tle, &gtle, &gscore, &max_off[0]);
                 if (bwa_verbose >= 4) {
                     printf("*** Left extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n",
-                        prev,
-                        a->score, aw[0], max_off[0]);
+                        prev, a->score, aw[0], max_off[0]);
                     fflush(stdout);
                 }
                 if (a->score == prev || max_off[0] < (aw[0] >> 1) + (aw[0] >> 2)) {
@@ -1010,15 +1064,12 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
                     }
                     putchar('\n');
                 }
-                a->score = ksw_extend2(l_query - qe, query + qe, rmax[1] - rmax[0] - re, rseq + re, 5, opt->mat,
-                    opt->o_del,
-                    opt->e_del, opt->o_ins, opt->e_ins, aw[1], opt->pen_clip3, opt->zdrop, sc0, &qle, &tle, &gtle,
-                    &gscore,
-                    &max_off[1]);
+                a->score = ksw_extend2(l_query - qe, query + qe, rmax[1] - rmax[0] - re, rseq + re, 5,
+                    opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, aw[1], opt->pen_clip3, opt->zdrop,
+                    sc0, &qle, &tle, &gtle, &gscore, &max_off[1]);
                 if (bwa_verbose >= 4) {
                     printf("*** Right extension: prev_score=%d; score=%d; bandwidth=%d; max_off_diagonal_dist=%d\n",
-                        prev,
-                        a->score, aw[1], max_off[1]);
+                        prev, a->score, aw[1], max_off[1]);
                     fflush(stdout);
                 }
                 if (a->score == prev || max_off[1] < (aw[1] >> 1) + (aw[1] >> 2)) {
@@ -1038,8 +1089,7 @@ void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac
         }
         if (bwa_verbose >= 4) {
             printf("*** Added alignment region: [%d,%d) <=> [%ld,%ld); score=%d; {left,right}_bandwidth={%d,%d}\n",
-                a->qb, a->qe,
-                (long)a->rb, (long)a->re, a->score, aw[0], aw[1]);
+                a->qb, a->qe, (long)a->rb, (long)a->re, a->score, aw[0], aw[1]);
         }
 
         // compute seedcov
@@ -1378,6 +1428,16 @@ void mem_reorder_primary5(int T, mem_alnreg_v *a) {
 }
 
 // TODO (future plan): group hits into a uint64_t[] array. This will be cleaner and more flexible
+/**
+ * 将匹配的reg数据转换为sam数据
+ * @param opt 程序运行参数
+ * @param bns reference的bns数据
+ * @param pac reference的pac数据
+ * @param s 比对输出的数据指针
+ * @param a 比对结果的reg数据指针
+ * @param extra_flag
+ * @param m
+ */
 void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, bseq1_t *s, mem_alnreg_v *a, int extra_flag, const mem_aln_t *m) {
     extern char **mem_gen_alt(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, mem_alnreg_v *a, int l_query, const char *query);
     kstring_t str;
@@ -1468,7 +1528,7 @@ mem_alnreg_v mem_align1_core(const mem_opt_t *opt, const bwt_t *bwt, const bntse
     mem_alnreg_v regs;
     kv_init(regs);
     for (int i = 0; i < chn.n; ++i) {
-        mem_chain_t *p = &chn.a[i];
+        mem_chain_t * p = &chn.a[i];
         if (bwa_verbose >= 4) {
             err_printf("* ---> Processing chain(%d) <---\n", i);
         }
@@ -1531,7 +1591,7 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         free(a.cigar);
         w2 = w2 < opt->w << 2 ? w2 : opt->w << 2;
         a.cigar = bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w2, bns->l_pac, pac, qe - qb,
-            (uint8_t *)&query[qb], rb, re, &score, &a.n_cigar, &NM);
+            (uint8_t * ) & query[qb], rb, re, &score, &a.n_cigar, &NM);
         if (bwa_verbose >= 4) {
             printf("* Final alignment: w2=%d, global_sc=%d, local_sc=%d\n", w2, score, ar->truesc);
         }
@@ -1618,7 +1678,6 @@ static void worker1(void *data, int i, int tid) {
 
 static void worker2(void *data, int i, int tid) {
     extern int mem_sam_pe(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, const mem_pestat_t pes[4], uint64_t id, bseq1_t s[2], mem_alnreg_v a[2]);
-
     worker_t *w = (worker_t *)data;
     if (!(w->opt->flag & MEM_F_PE)) {
         if (bwa_verbose >= 4) {
@@ -1641,16 +1700,25 @@ static void worker2(void *data, int i, int tid) {
 }
 
 //mem处理seqs的比对执行过程
+/**
+ * 执行mem比对算法执行的逻辑控制函数
+ * @param opt 程序执行参数
+ * @param bwt reference的bwt数据
+ * @param bns reference的bns数据
+ * @param pac reference的pac数据
+ * @param n_processed 处理过的计数
+ * @param n n_seqs的索引
+ * @param seqs n_seqs中对于n位置的query指针
+ * @param pes0
+ */
 void mem_process_seqs(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bns, const uint8_t *pac, int64_t n_processed, int n, bseq1_t *seqs, const mem_pestat_t *pes0) {
     extern void kt_for(int n_threads, void (*func)(void *, int, int), void *data, int n);
-    worker_t w;
-    mem_pestat_t pes[4];
-    double ctime, rtime;
-    int i;
-
-    ctime = cputime();
-    rtime = realtime();
+    double ctime = cputime();
+    double rtime = realtime();
     global_bns = bns;
+
+    mem_pestat_t pes[4];
+    worker_t w;
     w.regs = malloc(n * sizeof(mem_alnreg_v));
     w.opt = opt;
     w.bwt = bwt;
@@ -1660,11 +1728,11 @@ void mem_process_seqs(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
     w.n_processed = n_processed;
     w.pes = &pes[0];
     w.aux = malloc(opt->n_threads * sizeof(smem_aux_t));
-    for (i = 0; i < opt->n_threads; ++i) {
+    for (int i = 0; i < opt->n_threads; ++i) {
         w.aux[i] = smem_aux_init();
     }
     kt_for(opt->n_threads, worker1, &w, (opt->flag & MEM_F_PE) ? n >> 1 : n); // find mapping positions
-    for (i = 0; i < opt->n_threads; ++i) {
+    for (int i = 0; i < opt->n_threads; ++i) {
         smem_aux_destroy(w.aux[i]);
     }
     free(w.aux);

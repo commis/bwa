@@ -69,8 +69,8 @@ kswq_t *ksw_qinit(int size, int qlen, const uint8_t *query, int m, const int8_t 
     size = size > 1 ? 2 : 1;
     p = 8 * (3 - size); // # values per __m128i
     slen = (qlen + p - 1) / p; // segmented length
-    q = (kswq_t *) malloc(sizeof(kswq_t) + 256 + 16 * slen * (m + 4)); // a single block of memory
-    q->qp = (__m128i *) (((size_t) q + sizeof(kswq_t) + 15) >> 4 << 4); // align memory
+    q = (kswq_t *)malloc(sizeof(kswq_t) + 256 + 16 * slen * (m + 4)); // a single block of memory
+    q->qp = (__m128i * )(((size_t)q + sizeof(kswq_t) + 15) >> 4 << 4); // align memory
     q->H0 = q->qp + slen * m;
     q->H1 = q->H0 + slen;
     q->E = q->H1 + slen;
@@ -81,10 +81,10 @@ kswq_t *ksw_qinit(int size, int qlen, const uint8_t *query, int m, const int8_t 
     // compute shift
     tmp = m * m;
     for (a = 0, q->shift = 127, q->mdiff = 0; a < tmp; ++a) { // find the minimum and maximum score
-        if (mat[a] < (int8_t) q->shift) {
+        if (mat[a] < (int8_t)q->shift) {
             q->shift = mat[a];
         }
-        if (mat[a] > (int8_t) q->mdiff) {
+        if (mat[a] > (int8_t)q->mdiff) {
             q->mdiff = mat[a];
         }
     }
@@ -94,7 +94,7 @@ kswq_t *ksw_qinit(int size, int qlen, const uint8_t *query, int m, const int8_t 
     // An example: p=8, qlen=19, slen=3 and segmentation:
     //  {{0,3,6,9,12,15,18,-1},{1,4,7,10,13,16,-1,-1},{2,5,8,11,14,17,-1,-1}}
     if (size == 1) {
-        int8_t *t = (int8_t *) q->qp;
+        int8_t *t = (int8_t *)q->qp;
         for (a = 0; a < m; ++a) {
             int i, k, nlen = slen * p;
             const int8_t *ma = mat + a * m;
@@ -105,7 +105,7 @@ kswq_t *ksw_qinit(int size, int qlen, const uint8_t *query, int m, const int8_t 
             }
         }
     } else {
-        int16_t *t = (int16_t *) q->qp;
+        int16_t *t = (int16_t *)q->qp;
         for (a = 0; a < m; ++a) {
             int i, k, nlen = slen * p;
             const int8_t *ma = mat + a * m;
@@ -189,7 +189,8 @@ kswr_t ksw_u8(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_del
             h = _mm_load_si128(H0 + j); // h=H'(i-1,j)
         }
         // NB: we do not need to set E(i,j) as we disallow adjecent insertion and then deletion
-        for (k = 0; LIKELY(k < 16); ++k) { // this block mimics SWPS3; NB: H(i,j) updated in the lazy-F loop cannot exceed max
+        for (k = 0; LIKELY(
+            k < 16); ++k) { // this block mimics SWPS3; NB: H(i,j) updated in the lazy-F loop cannot exceed max
             f = _mm_slli_si128(f, 1);
             for (j = 0; LIKELY(j < slen); ++j) {
                 h = _mm_load_si128(H1 + j);
@@ -207,14 +208,14 @@ kswr_t ksw_u8(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_del
         //int k;for (k=0;k<16;++k)printf("%d ", ((uint8_t*)&max)[k]);printf("\n");
         __max_16(imax, max); // imax is the maximum number in max
         if (imax >= minsc) { // write the b array; this condition adds branching unfornately
-            if (n_b == 0 || (int32_t) b[n_b - 1] + 1 != i) { // then append
+            if (n_b == 0 || (int32_t)b[n_b - 1] + 1 != i) { // then append
                 if (n_b == m_b) {
                     m_b = m_b ? m_b << 1 : 8;
-                    b = (uint64_t *) realloc(b, 8 * m_b);
+                    b = (uint64_t *)realloc(b, 8 * m_b);
                 }
-                b[n_b++] = (uint64_t) imax << 32 | i;
-            } else if ((int) (b[n_b - 1] >> 32) < imax) {
-                b[n_b - 1] = (uint64_t) imax << 32 | i;
+                b[n_b++] = (uint64_t)imax << 32 | i;
+            } else if ((int)(b[n_b - 1] >> 32) < imax) {
+                b[n_b - 1] = (uint64_t)imax << 32 | i;
             } // modify the last
         }
         if (imax > gmax) {
@@ -235,11 +236,11 @@ kswr_t ksw_u8(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_del
     r.te = te;
     if (r.score != 255) { // get a->qe, the end of query match; find the 2nd best score
         int max = -1, tmp, low, high, qlen = slen * 16;
-        uint8_t *t = (uint8_t *) Hmax;
+        uint8_t *t = (uint8_t *)Hmax;
         for (i = 0; i < qlen; ++i, ++t) {
-            if ((int) *t > max) {
+            if ((int)*t > max) {
                 max = *t, r.qe = i / 16 + i % 16 * slen;
-            } else if ((int) *t == max && (tmp = i / 16 + i % 16 * slen) < r.qe) {
+            } else if ((int)*t == max && (tmp = i / 16 + i % 16 * slen) < r.qe) {
                 r.qe = tmp;
             }
         }
@@ -249,8 +250,8 @@ kswr_t ksw_u8(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_del
             low = te - i;
             high = te + i;
             for (i = 0; i < n_b; ++i) {
-                int e = (int32_t) b[i];
-                if ((e < low || e > high) && (int) (b[i] >> 32) > r.score2) {
+                int e = (int32_t)b[i];
+                if ((e < low || e > high) && (int)(b[i] >> 32) > r.score2) {
                     r.score2 = b[i] >> 32, r.te2 = e;
                 }
             }
@@ -333,14 +334,14 @@ kswr_t ksw_i16(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_de
         end_loop8:
         __max_8(imax, max);
         if (imax >= minsc) {
-            if (n_b == 0 || (int32_t) b[n_b - 1] + 1 != i) {
+            if (n_b == 0 || (int32_t)b[n_b - 1] + 1 != i) {
                 if (n_b == m_b) {
                     m_b = m_b ? m_b << 1 : 8;
-                    b = (uint64_t *) realloc(b, 8 * m_b);
+                    b = (uint64_t *)realloc(b, 8 * m_b);
                 }
-                b[n_b++] = (uint64_t) imax << 32 | i;
-            } else if ((int) (b[n_b - 1] >> 32) < imax) {
-                b[n_b - 1] = (uint64_t) imax << 32 | i;
+                b[n_b++] = (uint64_t)imax << 32 | i;
+            } else if ((int)(b[n_b - 1] >> 32) < imax) {
+                b[n_b - 1] = (uint64_t)imax << 32 | i;
             } // modify the last
         }
         if (imax > gmax) {
@@ -361,11 +362,11 @@ kswr_t ksw_i16(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_de
     r.te = te;
     {
         int max = -1, tmp, low, high, qlen = slen * 8;
-        uint16_t *t = (uint16_t *) Hmax;
+        uint16_t *t = (uint16_t *)Hmax;
         for (i = 0, r.qe = -1; i < qlen; ++i, ++t) {
-            if ((int) *t > max) {
+            if ((int)*t > max) {
                 max = *t, r.qe = i / 8 + i % 8 * slen;
-            } else if ((int) *t == max && (tmp = i / 8 + i % 8 * slen) < r.qe) {
+            } else if ((int)*t == max && (tmp = i / 8 + i % 8 * slen) < r.qe) {
                 r.qe = tmp;
             }
         }
@@ -374,8 +375,8 @@ kswr_t ksw_i16(kswq_t *q, int tlen, const uint8_t *target, int _o_del, int _e_de
             low = te - i;
             high = te + i;
             for (i = 0; i < n_b; ++i) {
-                int e = (int32_t) b[i];
-                if ((e < low || e > high) && (int) (b[i] >> 32) > r.score2) {
+                int e = (int32_t)b[i];
+                if ((e < low || e > high) && (int)(b[i] >> 32) > r.score2) {
                     r.score2 = b[i] >> 32, r.te2 = e;
                 }
             }
@@ -436,6 +437,29 @@ typedef struct {
     int32_t h, e;
 } eh_t;
 
+/**
+ * 该函数为存计算，可以考虑改为使用GPU加速执行
+ * @param qlen query的长度
+ * @param query query数组指针
+ * @param tlen reference的长度
+ * @param target reference数据指针
+ * @param m 碱基种类=5
+ * @param mat m*m矩阵的匹配得分表
+ * @param o_del
+ * @param e_del
+ * @param o_ins
+ * @param e_ins
+ * @param w 匹配位置和beg的最大距离 w=100
+ * @param end_bonus end_bonus=5
+ * @param zdrop zdrop=100
+ * @param h0 该seed的初始得分（完全匹配query的碱基数）
+ * @param _qle 匹配得到全局最大得分的碱基在query的位置
+ * @param _tle 匹配得到全局最大得分的碱基在reference的位置
+ * @param _gtle query全部匹配上的target的长度
+ * @param _gscore query的端到端匹配得分
+ * @param _max_off 取得最大得分时在query和reference上位置差的 最大值
+ * @return best semi-local alignment score
+ */
 int ksw_extend2(int qlen, const uint8_t *query, int tlen, const uint8_t *target, int m, const int8_t *mat, int o_del, int e_del, int o_ins, int e_ins, int w, int end_bonus, int zdrop, int h0, int *_qle, int *_tle, int *_gtle, int *_gscore, int *_max_off) {
     eh_t *eh; // score array
     int8_t *qp; // query profile
@@ -462,10 +486,10 @@ int ksw_extend2(int qlen, const uint8_t *query, int tlen, const uint8_t *target,
     for (i = 0, max = 0; i < k; ++i) { // get the max score
         max = max > mat[i] ? max : mat[i];
     }
-    max_ins = (int) ((double) (qlen * max + end_bonus - o_ins) / e_ins + 1.);
+    max_ins = (int)((double)(qlen * max + end_bonus - o_ins) / e_ins + 1.);
     max_ins = max_ins > 1 ? max_ins : 1;
     w = w < max_ins ? w : max_ins;
-    max_del = (int) ((double) (qlen * max + end_bonus - o_del) / e_del + 1.);
+    max_del = (int)((double)(qlen * max + end_bonus - o_del) / e_del + 1.);
     max_del = max_del > 1 ? max_del : 1;
     w = w < max_del ? w : max_del; // TODO: is this necessary?
     // DP loop
@@ -572,8 +596,30 @@ int ksw_extend2(int qlen, const uint8_t *query, int tlen, const uint8_t *target,
     return max;
 }
 
+/**
+ * 该函数为存计算，可以考虑改为使用GPU加速执行
+ * @param qlen 待匹配段碱基的query长度
+ * @param query query的指针
+ * @param tlen reference长度
+ * @param target reference数据的指针
+ * @param m 碱基种类=5
+ * @param mat 每个位置的query和target的匹配得分
+ * @param gapo 错配开始的惩罚系数=6
+ * @param gape 错配继续的惩罚系数=1
+ * @param w 匹配位置和beg的最大距离w=100
+ * @param end_bonus end_bonus=5
+ * @param zdrop zdrop=100
+ * @param h0 该seed的初始得分（完全匹配query的碱基数）
+ * @param qle 匹配得到全局最大得分的碱基在query的位置
+ * @param tle 匹配得到全局最大得分的碱基在reference的位置
+ * @param gtle query全部匹配上的target的长度
+ * @param gscore query的端到端匹配得分
+ * @param max_off 取得最大得分时在query和reference上位置差的 最大值
+ * @return best semi-local alignment score
+ */
 int ksw_extend(int qlen, const uint8_t *query, int tlen, const uint8_t *target, int m, const int8_t *mat, int gapo, int gape, int w, int end_bonus, int zdrop, int h0, int *qle, int *tle, int *gtle, int *gscore, int *max_off) {
-    return ksw_extend2(qlen, query, tlen, target, m, mat, gapo, gape, gapo, gape, w, end_bonus, zdrop, h0, qle, tle, gtle, gscore,
+    return ksw_extend2(qlen, query, tlen, target, m, mat, gapo, gape, gapo, gape, w, end_bonus, zdrop, h0, qle, tle,
+        gtle, gscore,
         max_off);
 }
 
@@ -583,7 +629,10 @@ int ksw_extend(int qlen, const uint8_t *query, int tlen, const uint8_t *target, 
 
 #define MINUS_INF -0x40000000
 
-static inline uint32_t *push_cigar(int *n_cigar, int *m_cigar, uint32_t *cigar, int op, int len) {
+static inline uint32_t
+*
+
+push_cigar(int *n_cigar, int *m_cigar, uint32_t *cigar, int op, int len) {
     if (*n_cigar == 0 || op != (cigar[(*n_cigar) - 1] & 0xf)) {
         if (*n_cigar == *m_cigar) {
             *m_cigar = *m_cigar ? (*m_cigar) << 1 : 4;
@@ -606,7 +655,7 @@ int ksw_global2(int qlen, const uint8_t *query, int tlen, const uint8_t *target,
     }
     // allocate memory
     n_col = qlen < 2 * w + 1 ? qlen : 2 * w + 1; // maximum #columns of the backtrack matrix
-    z = n_cigar_ && cigar_ ? malloc((long) n_col * tlen) : 0;
+    z = n_cigar_ && cigar_ ? malloc((long)n_col * tlen) : 0;
     qp = malloc(qlen * m);
     eh = calloc(qlen + 1, 8);
     // generate the query profile
@@ -633,7 +682,7 @@ int ksw_global2(int qlen, const uint8_t *query, int tlen, const uint8_t *target,
         end = i + w + 1 < qlen ? i + w + 1 : qlen; // only loop through [beg,end) of the query sequence
         h1 = beg == 0 ? -(o_del + e_del * (i + 1)) : MINUS_INF;
         if (n_cigar_ && cigar_) {
-            uint8_t *zi = &z[(long) i * n_col];
+            uint8_t *zi = &z[(long)i * n_col];
             for (j = beg; LIKELY(j < end); ++j) {
                 // At the beginning of the loop: eh[j] = { H(i-1,j-1), E(i,j) }, f = F(i,j) and h1 = H(i,j-1)
                 // Cells are computed in the following order:
@@ -690,11 +739,11 @@ int ksw_global2(int qlen, const uint8_t *query, int tlen, const uint8_t *target,
     score = eh[qlen].h;
     if (n_cigar_ && cigar_) { // backtrack
         int n_cigar = 0, m_cigar = 0, which = 0;
-        uint32_t *cigar = 0, tmp;
+        uint32_t * cigar = 0, tmp;
         i = tlen - 1;
         k = (i + w + 1 < qlen ? i + w + 1 : qlen) - 1; // (i,k) points to the last cell
         while (i >= 0 && k >= 0) {
-            which = z[(long) i * n_col + (k - (i > w ? i - w : 0))] >> (which << 1) & 3;
+            which = z[(long)i * n_col + (k - (i > w ? i - w : 0))] >> (which << 1) & 3;
             if (which == 0) {
                 cigar = push_cigar(&n_cigar, &m_cigar, cigar, 0, 1), --i, --k;
             } else if (which == 1) {

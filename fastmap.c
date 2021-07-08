@@ -64,17 +64,22 @@ typedef struct {
     bseq1_t *seqs;
 } ktp_data_t;
 
-//该执行过程的step由kthread.c中的ktp_worker控制，具体业务的执行入口函数
-//函数输入：shared(ktp_aux_t), step, data(ktp_data_t)
+/**
+ * 业务工作的入口函数，由多线程控制(ktp_worker)调度
+ * @param shared 线程共享数据(ktp_aux_t)
+ * @param step 第几步
+ * @param _data 数据(ktp_data_t)
+ * @return
+ */
 static void *process(void *shared, int step, void *_data) {
     ktp_aux_t *aux = (ktp_aux_t *)shared;
     ktp_data_t *data = (ktp_data_t *)_data;
 
     if (step == 0) {
+        //step 1: 读取待比对基因序列数据，最多支持两个压缩文件
         ktp_data_t *ret;
         int64_t size = 0;
         ret = calloc(1, sizeof(ktp_data_t));
-        //第一步：读取待比对基因序列数据
         ret->seqs = bseq_read(aux->actual_chunk_size, &ret->n_seqs, aux->ks, aux->ks2);
         if (ret->seqs == 0) {
             free(ret);
@@ -94,6 +99,7 @@ static void *process(void *shared, int step, void *_data) {
         }
         return ret;
     } else if (step == 1) {
+        //step 2: 执行序列数据的匹配查找
         const mem_opt_t *opt = aux->opt;
         const bwaidx_t *idx = aux->idx;
         if (opt->flag & MEM_F_SMARTPE) {
@@ -102,8 +108,8 @@ static void *process(void *shared, int step, void *_data) {
             mem_opt_t tmp_opt = *opt;
             bseq_classify(data->n_seqs, data->seqs, n_sep, sep);
             if (bwa_verbose >= 3) {
-                fprintf(stderr, "[M::%s] %d single-end sequences; %d paired-end sequences\n", __func__, n_sep[0],
-                    n_sep[1]);
+                fprintf(stderr, "[M::%s] %d single-end sequences; %d paired-end sequences\n",
+                    __func__, n_sep[0], n_sep[1]);
             }
             if (n_sep[0]) {
                 tmp_opt.flag &= ~MEM_F_PE;
@@ -123,14 +129,13 @@ static void *process(void *shared, int step, void *_data) {
             free(sep[0]);
             free(sep[1]);
         } else {
-            //第二步：mem处理seq序列的比对
             mem_process_seqs(opt, idx->bwt, idx->bns, idx->pac, aux->n_processed, data->n_seqs, data->seqs, aux->pes0);
         }
         aux->n_processed += data->n_seqs;
         return data;
     } else if (step == 2) {
+        //step 2: 输出比对结果(sam)，并释放内存指针
         for (int i = 0; i < data->n_seqs; ++i) {
-            //如果匹配结果不为空，直接输出匹配结果(sam)
             if (data->seqs[i].sam) {
                 err_fputs(data->seqs[i].sam, stdout);
             }
@@ -562,6 +567,7 @@ int main_mem(int argc, char *argv[]) {
     }
     bwa_print_sam_hdr(aux.idx->bns, hdr_line);
     aux.actual_chunk_size = fixed_chunk_size > 0 ? fixed_chunk_size : opt->chunk_size * opt->n_threads;
+    //默认启动两个线程工作
     kt_pipeline(no_mt_io ? 1 : 2, process, &aux, 3);
     free(hdr_line);
     free(opt);

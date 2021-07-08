@@ -37,7 +37,7 @@ static inline long steal_work(kt_for_t *t) {
 }
 
 static void *ktf_worker(void *data) {
-    ktf_worker_t *w = (ktf_worker_t *) data;
+    ktf_worker_t *w = (ktf_worker_t *)data;
     long i;
     for (;;) {
         i = __sync_fetch_and_add(&w->i, w->t->n_threads);
@@ -57,8 +57,8 @@ void kt_for(int n_threads, void (*func)(void *, long, int), void *data, long n) 
     kt_for_t t;
     pthread_t *tid;
     t.func = func, t.data = data, t.n_threads = n_threads, t.n = n;
-    t.w = (ktf_worker_t *) alloca(n_threads * sizeof(ktf_worker_t));
-    tid = (pthread_t *) alloca(n_threads * sizeof(pthread_t));
+    t.w = (ktf_worker_t *)alloca(n_threads * sizeof(ktf_worker_t));
+    tid = (pthread_t *)alloca(n_threads * sizeof(pthread_t));
     for (i = 0; i < n_threads; ++i) {
         t.w[i].t = &t, t.w[i].i = i;
     }
@@ -98,7 +98,7 @@ typedef struct ktp_t {
 
 //多线程执行的入口函数，该函数控制执行哪些业务逻辑
 static void *ktp_worker(void *data) {
-    ktp_worker_t *w = (ktp_worker_t *) data;
+    ktp_worker_t *w = (ktp_worker_t *)data;
     ktp_t *p = w->pl;
     while (w->step < p->n_steps) {
         // test whether we can kick off the job with this worker
@@ -137,9 +137,15 @@ static void *ktp_worker(void *data) {
     pthread_exit(0);
 }
 
+/**
+ * 线程控制管理，启动工作线程
+ * @param n_threads 线程数量
+ * @param func 线程执行函数
+ * @param shared_data 线程共享数据
+ * @param n_steps 需要执行的步数
+ */
 void kt_pipeline(int n_threads, void *(*func)(void *, int, void *), void *shared_data, int n_steps) {
     ktp_t aux;
-    pthread_t *tid;
     int i;
 
     if (n_threads < 1) {
@@ -153,8 +159,8 @@ void kt_pipeline(int n_threads, void *(*func)(void *, int, void *), void *shared
     pthread_mutex_init(&aux.mutex, 0);
     pthread_cond_init(&aux.cv, 0);
 
-    //分配多线程，并设置线程执行参数
-    aux.workers = (ktp_worker_t *) alloca(n_threads * sizeof(ktp_worker_t));
+    //分配多线程，并初始化线程执行参数
+    aux.workers = (ktp_worker_t *)alloca(n_threads * sizeof(ktp_worker_t));
     for (i = 0; i < n_threads; ++i) {
         ktp_worker_t *w = &aux.workers[i];
         w->step = 0;
@@ -164,7 +170,7 @@ void kt_pipeline(int n_threads, void *(*func)(void *, int, void *), void *shared
     }
 
     //启动多线程执行比对任务
-    tid = (pthread_t *) alloca(n_threads * sizeof(pthread_t));
+    pthread_t *tid = (pthread_t *)alloca(n_threads * sizeof(pthread_t));
     for (i = 0; i < n_threads; ++i) {
         pthread_create(&tid[i], 0, ktp_worker, &aux.workers[i]);
     }
@@ -173,7 +179,6 @@ void kt_pipeline(int n_threads, void *(*func)(void *, int, void *), void *shared
     for (i = 0; i < n_threads; ++i) {
         pthread_join(tid[i], 0);
     }
-
     pthread_mutex_destroy(&aux.mutex);
     pthread_cond_destroy(&aux.cv);
 }

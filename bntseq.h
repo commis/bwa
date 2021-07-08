@@ -39,7 +39,7 @@ typedef uint8_t ubyte_t;
 #endif
 
 typedef struct {
-    int64_t offset; //染色体偏移量
+    int64_t offset; //染色体开始位置
     int32_t len; //染色体长度
     int32_t n_ambs; //多少个模糊碱基
     uint32_t gi;
@@ -48,15 +48,15 @@ typedef struct {
 } bntann1_t;
 
 typedef struct {
-    int64_t offset; //偏移量
+    int64_t offset; //开始位置
     int32_t len; //长度
     char amb; //模式碱基的字符
 } bntamb1_t;
 
 typedef struct {
-    int64_t l_pac;  //pac的长度计数
+    int64_t l_pac;  //pac的长度
     int32_t n_seqs; //基因组序列数
-    uint32_t seed; //随机数种子
+    uint32_t seed; //种子数
     bntann1_t *anns; // n_seqs elements
     int32_t n_holes; //染色体有多少个空缺
     bntamb1_t *ambs; // n_holes elements
@@ -93,6 +93,13 @@ int bns_intv2rid(const bntseq_t *bns, int64_t rb, int64_t re);
 }
 #endif
 
+/**
+ * 检测是否在反向序列中，并返回实际的位置（或反序的开始位置）
+ * @param bns reference的bns信息
+ * @param pos 位置
+ * @param is_rev 是否反序
+ * @return 实际位置
+ */
 static inline int64_t bns_depos(const bntseq_t *bns, int64_t pos, int *is_rev) {
     return (*is_rev = (pos >= bns->l_pac)) ? (bns->l_pac << 1) - 1 - pos : pos;
 }

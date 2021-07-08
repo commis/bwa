@@ -65,7 +65,8 @@ typedef struct {
     /**
      * name seq文件的名称，位于匹配文件的第一行
      * seq seq的内容，处理中会被转换为2bit的数据，即nst_nt4_table的映射值
-     * qual seq中+后面的一段
+     * qual seq中+后面的一段序列
+     * sam 匹配结果数据
      */
     char *name, *comment, *seq, *qual, *sam;
 } bseq1_t;
