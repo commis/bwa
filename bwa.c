@@ -44,7 +44,7 @@
 int bwa_verbose = 3;
 int bwa_dbg = 0;
 char bwa_rg_id[256];
-char * bwa_pg;
+char *bwa_pg;
 
 /************************
  * Batch FASTA/Q reader *
@@ -54,14 +54,14 @@ char * bwa_pg;
 
 KSEQ_DECLARE(gzFile)
 
-static inline void trim_readno(kstring_t * s) {
+static inline void trim_readno(kstring_t *s) {
     if (s->l > 2 && s->s[s->l - 2] == '/' && isdigit(s->s[s->l - 1])) {
         s->l -= 2, s->s[s->l] = 0;
     }
 }
 
-static inline char * dupkstring(const kstring_t * str, int dupempty) {
-    char * s = (str->l > 0 || dupempty) ? malloc(str->l + 1) : NULL;
+static inline char *dupkstring(const kstring_t *str, int dupempty) {
+    char *s = (str->l > 0 || dupempty) ? malloc(str->l + 1) : NULL;
     if (!s) {
         return NULL;
     }
@@ -71,7 +71,7 @@ static inline char * dupkstring(const kstring_t * str, int dupempty) {
     return s;
 }
 
-static inline void kseq2bseq1(const kseq_t * ks, bseq1_t * s) { // TODO: it would be better to allocate one chunk of memory, but probably it does not matter in practice
+static inline void kseq2bseq1(const kseq_t *ks, bseq1_t *s) { // TODO: it would be better to allocate one chunk of memory, but probably it does not matter in practice
     s->name = dupkstring(&ks->name, 1);
     s->comment = dupkstring(&ks->comment, 0);
     s->seq = dupkstring(&ks->seq, 1);
@@ -80,11 +80,11 @@ static inline void kseq2bseq1(const kseq_t * ks, bseq1_t * s) { // TODO: it woul
 }
 
 //读取待比对基于序列文件的数据
-bseq1_t * bseq_read(int chunk_size, int * n_, void * ks1_, void * ks2_) {
-    kseq_t * ks = (kseq_t *)ks1_;
-    kseq_t * ks2 = (kseq_t *)ks2_;
+bseq1_t *bseq_read(int chunk_size, int *n_, void *ks1_, void *ks2_) {
+    kseq_t *ks = (kseq_t *)ks1_;
+    kseq_t *ks2 = (kseq_t *)ks2_;
     int size = 0, m, n;
-    bseq1_t * seqs;
+    bseq1_t *seqs;
     m = n = 0;
     seqs = 0;
     while (kseq_read(ks) >= 0) {
@@ -126,7 +126,7 @@ bseq1_t * bseq_read(int chunk_size, int * n_, void * ks1_, void * ks2_) {
  * @param m 分组中seq的长度
  * @param sep 分组中seq的指针数组
  */
-void bseq_classify(int n, bseq1_t * seqs, int m[2], bseq1_t * sep[2]) {
+void bseq_classify(int n, bseq1_t *seqs, int m[2], bseq1_t *sep[2]) {
     int i, has_last;
     kvec_t(bseq1_t) a[2] = {{0, 0, 0},
                             {0, 0, 0}};
@@ -176,7 +176,26 @@ void bwa_fill_scmat(int a, int b, int8_t mat[25]) {
 }
 
 // Generate CIGAR when the alignment end points are known
-uint32_t * bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins, int e_ins, int w_, int64_t l_pac, const uint8_t * pac, int l_query, uint8_t * query, int64_t rb, int64_t re, int * score, int * n_cigar, int * NM) {
+/**
+ * 生成CIGAR数据
+ * @param mat
+ * @param o_del
+ * @param e_del
+ * @param o_ins
+ * @param e_ins
+ * @param w_
+ * @param l_pac reference的pac长度
+ * @param pac reference的pac信息
+ * @param l_query query的长度
+ * @param query query的数据指针
+ * @param rb
+ * @param re
+ * @param score 得分
+ * @param n_cigar cigar的长度
+ * @param NM
+ * @return cigar数据信息
+ */
+uint32_t *bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins, int e_ins, int w_, int64_t l_pac, const uint8_t *pac, int l_query, uint8_t *query, int64_t rb, int64_t re, int *score, int *n_cigar, int *NM) {
     if (n_cigar) {
         *n_cigar = 0;
     }
@@ -188,7 +207,7 @@ uint32_t * bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins,
         return 0;
     }
     int64_t rlen;
-    uint8_t * rseq = bns_get_seq(l_pac, pac, rb, re, &rlen);
+    uint8_t *rseq = bns_get_seq(l_pac, pac, rb, re, &rlen);
     if (re - rb != rlen) {
         goto ret_gen_cigar;
     } // possible if out of range
@@ -203,7 +222,7 @@ uint32_t * bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins,
         }
     }
 
-    uint32_t * cigar = 0;
+    uint32_t *cigar = 0;
     if (l_query == re - rb && w_ == 0) { // no gap; no need to do DP
         // UPDATE: we come to this block now... FIXME: due to an issue in mem_reg2aln(), we never come to this block. This does not affect accuracy, but it hurts performance.
         if (n_cigar) {
@@ -247,11 +266,10 @@ uint32_t * bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins,
         kstring_t str;
         str.l = str.m = *n_cigar * 4;
         str.s = (char *)cigar; // append MD to CIGAR
-        const char * int2base = rb < l_pac ? "ACGTN" : "TGCAN";
+        const char *int2base = rb < l_pac ? "ACGTN" : "TGCAN";
         for (int k = 0, x = y = u = 0; k < *n_cigar; ++k) {
-            int op, len;
             cigar = (uint32_t *)str.s;
-            op = cigar[k] & 0xf, len = cigar[k] >> 4;
+            int op = cigar[k] & 0xf, len = cigar[k] >> 4;
             if (op == 0) { // match
                 for (int i = 0; i < len; ++i) {
                     if (query[x + i] != rseq[y + i]) {
@@ -296,7 +314,24 @@ uint32_t * bwa_gen_cigar2(const int8_t mat[25], int o_del, int e_del, int o_ins,
     return cigar;
 }
 
-uint32_t * bwa_gen_cigar(const int8_t mat[25], int q, int r, int w_, int64_t l_pac, const uint8_t * pac, int l_query, uint8_t * query, int64_t rb, int64_t re, int * score, int * n_cigar, int * NM) {
+/**
+ * 生成CIGAR数据
+ * @param mat
+ * @param q
+ * @param r
+ * @param w_
+ * @param l_pac
+ * @param pac
+ * @param l_query
+ * @param query
+ * @param rb
+ * @param re
+ * @param score
+ * @param n_cigar
+ * @param NM
+ * @return
+ */
+uint32_t *bwa_gen_cigar(const int8_t mat[25], int q, int r, int w_, int64_t l_pac, const uint8_t *pac, int l_query, uint8_t *query, int64_t rb, int64_t re, int *score, int *n_cigar, int *NM) {
     return bwa_gen_cigar2(mat, q, r, q, r, w_, l_pac, pac, l_query, query, rb, re, score, n_cigar, NM);
 }
 
@@ -304,14 +339,13 @@ uint32_t * bwa_gen_cigar(const int8_t mat[25], int q, int r, int w_, int64_t l_p
  * Full index reader *
  *********************/
 
-char * bwa_idx_infer_prefix(const char * hint) {
-    char * prefix;
-    int l_hint;
-    FILE * fp;
-    l_hint = strlen(hint);
-    prefix = malloc(l_hint + 3 + 4 + 1);
+char *bwa_idx_infer_prefix(const char *hint) {
+    int l_hint = strlen(hint);
+    char *prefix = malloc(l_hint + 3 + 4 + 1);
     strcpy(prefix, hint);
     strcpy(prefix + l_hint, ".64.bwt");
+
+    FILE *fp;
     if ((fp = fopen(prefix, "rb")) != 0) {
         fclose(fp);
         prefix[l_hint + 3] = 0;
@@ -329,19 +363,17 @@ char * bwa_idx_infer_prefix(const char * hint) {
     }
 }
 
-bwt_t * bwa_idx_load_bwt(const char * hint) {
-    char * tmp, * prefix;
-    bwt_t * bwt;
-    prefix = bwa_idx_infer_prefix(hint);
+bwt_t *bwa_idx_load_bwt(const char *hint) {
+    char *prefix = bwa_idx_infer_prefix(hint);
     if (prefix == 0) {
         if (bwa_verbose >= 1) {
             fprintf(stderr, "[E::%s] fail to locate the index files\n", __func__);
         }
         return 0;
     }
-    tmp = calloc(strlen(prefix) + 5, 1);
+    char *tmp = calloc(strlen(prefix) + 5, 1);
     strcat(strcpy(tmp, prefix), ".bwt"); // FM-index
-    bwt = bwt_restore_bwt(tmp);
+    bwt_t *bwt = bwt_restore_bwt(tmp);
     strcat(strcpy(tmp, prefix), ".sa");  // partial suffix array (SA)
     bwt_restore_sa(tmp, bwt);
     free(tmp);
@@ -349,23 +381,22 @@ bwt_t * bwa_idx_load_bwt(const char * hint) {
     return bwt;
 }
 
-bwaidx_t * bwa_idx_load_from_disk(const char * hint, int which) {
-    bwaidx_t * idx;
-    char * prefix;
-    prefix = bwa_idx_infer_prefix(hint);
+bwaidx_t *bwa_idx_load_from_disk(const char *hint, int which) {
+    char *prefix = bwa_idx_infer_prefix(hint);
     if (prefix == 0) {
         if (bwa_verbose >= 1) {
             fprintf(stderr, "[E::%s] fail to locate the index files\n", __func__);
         }
         return 0;
     }
-    idx = calloc(1, sizeof(bwaidx_t));
+    bwaidx_t *idx = calloc(1, sizeof(bwaidx_t));
     if (which & BWA_IDX_BWT) {
         idx->bwt = bwa_idx_load_bwt(hint);
     }
     if (which & BWA_IDX_BNS) {
-        int i, c;
         idx->bns = bns_restore(prefix);
+
+        int i, c;
         for (i = c = 0; i < idx->bns->n_seqs; ++i) {
             if (idx->bns->anns[i].is_alt) {
                 ++c;
@@ -386,11 +417,11 @@ bwaidx_t * bwa_idx_load_from_disk(const char * hint, int which) {
     return idx;
 }
 
-bwaidx_t * bwa_idx_load(const char * hint, int which) {
+bwaidx_t *bwa_idx_load(const char *hint, int which) {
     return bwa_idx_load_from_disk(hint, which);
 }
 
-void bwa_idx_destroy(bwaidx_t * idx) {
+void bwa_idx_destroy(bwaidx_t *idx) {
     if (idx == 0) {
         return;
     }
@@ -415,10 +446,8 @@ void bwa_idx_destroy(bwaidx_t * idx) {
     free(idx);
 }
 
-int bwa_mem2idx(int64_t l_mem, uint8_t * mem, bwaidx_t * idx) {
+int bwa_mem2idx(int64_t l_mem, uint8_t *mem, bwaidx_t *idx) {
     int64_t k = 0, x;
-    int i;
-
     // generate idx->bwt
     x = sizeof(bwt_t);
     idx->bwt = malloc(x);
@@ -443,7 +472,7 @@ int bwa_mem2idx(int64_t l_mem, uint8_t * mem, bwaidx_t * idx) {
     idx->bns->anns = malloc(x);
     memcpy(idx->bns->anns, mem + k, x);
     k += x;
-    for (i = 0; i < idx->bns->n_seqs; ++i) {
+    for (int i = 0; i < idx->bns->n_seqs; ++i) {
         idx->bns->anns[i].name = (char *)(mem + k);
         k += strlen(idx->bns->anns[i].name) + 1;
         idx->bns->anns[i].anno = (char *)(mem + k);
@@ -458,18 +487,14 @@ int bwa_mem2idx(int64_t l_mem, uint8_t * mem, bwaidx_t * idx) {
     return 0;
 }
 
-int bwa_idx2mem(bwaidx_t * idx) {
-    int i;
-    int64_t k, x, tmp;
-    uint8_t * mem;
-
+int bwa_idx2mem(bwaidx_t *idx) {
     // copy idx->bwt
-    x = idx->bwt->bwt_size * 4;
-    mem = realloc(idx->bwt->bwt, sizeof(bwt_t) + x);
+    int64_t x = idx->bwt->bwt_size * 4;
+    uint8_t *mem = realloc(idx->bwt->bwt, sizeof(bwt_t) + x);
     idx->bwt->bwt = 0;
     memmove(mem + sizeof(bwt_t), mem, x);
     memcpy(mem, idx->bwt, sizeof(bwt_t));
-    k = sizeof(bwt_t) + x;
+    int64_t k = sizeof(bwt_t) + x;
     x = idx->bwt->n_sa * sizeof(bwtint_t);
     mem = realloc(mem, k + x);
     memcpy(mem + k, idx->bwt->sa, x);
@@ -479,8 +504,8 @@ int bwa_idx2mem(bwaidx_t * idx) {
     idx->bwt = 0;
 
     // copy idx->bns
-    tmp = idx->bns->n_seqs * sizeof(bntann1_t) + idx->bns->n_holes * sizeof(bntamb1_t);
-    for (i = 0; i < idx->bns->n_seqs; ++i) { // compute the size of heap-allocated memory
+    int64_t tmp = idx->bns->n_seqs * sizeof(bntann1_t) + idx->bns->n_holes * sizeof(bntamb1_t);
+    for (int i = 0; i < idx->bns->n_seqs; ++i) { // compute the size of heap-allocated memory
         tmp += strlen(idx->bns->anns[i].name) + strlen(idx->bns->anns[i].anno) + 2;
     }
     mem = realloc(mem, k + sizeof(bntseq_t) + tmp);
@@ -494,7 +519,7 @@ int bwa_idx2mem(bwaidx_t * idx) {
     x = idx->bns->n_seqs * sizeof(bntann1_t);
     memcpy(mem + k, idx->bns->anns, x);
     k += x;
-    for (i = 0; i < idx->bns->n_seqs; ++i) {
+    for (int i = 0; i < idx->bns->n_seqs; ++i) {
         x = strlen(idx->bns->anns[i].name) + 1;
         memcpy(mem + k, idx->bns->anns[i].name, x);
         k += x;
@@ -523,11 +548,11 @@ int bwa_idx2mem(bwaidx_t * idx) {
  * SAM header routines *
  ***********************/
 //打印输出比对结果(sam)头部信息
-void bwa_print_sam_hdr(const bntseq_t * bns, const char * hdr_line) {
-    int i, n_SQ = 0;
-    extern char * bwa_pg;
+void bwa_print_sam_hdr(const bntseq_t *bns, const char *hdr_line) {
+    int n_SQ = 0;
+    extern char *bwa_pg;
     if (hdr_line) {
-        const char * p = hdr_line;
+        const char *p = hdr_line;
         while ((p = strstr(p, "@SQ\t")) != 0) {
             if (p == hdr_line || *(p - 1) == '\n') {
                 ++n_SQ;
@@ -536,7 +561,7 @@ void bwa_print_sam_hdr(const bntseq_t * bns, const char * hdr_line) {
         }
     }
     if (n_SQ == 0) {
-        for (i = 0; i < bns->n_seqs; ++i) {
+        for (int i = 0; i < bns->n_seqs; ++i) {
             err_printf("@SQ\tSN:%s\tLN:%d", bns->anns[i].name, bns->anns[i].len);
             if (bns->anns[i].is_alt) {
                 err_printf("\tAH:*\n");
@@ -557,8 +582,8 @@ void bwa_print_sam_hdr(const bntseq_t * bns, const char * hdr_line) {
     }
 }
 
-static char * bwa_escape(char * s) {
-    char * p, * q;
+static char *bwa_escape(char *s) {
+    char *p, *q;
     for (p = q = s; *p; ++p) {
         if (*p == '\\') {
             ++p;
@@ -579,8 +604,8 @@ static char * bwa_escape(char * s) {
     return s;
 }
 
-char * bwa_set_rg(const char * s) {
-    char * p, * q, * r, * rg_line = 0;
+char *bwa_set_rg(const char *s) {
+    char *p, *q, *r, *rg_line = 0;
     memset(bwa_rg_id, 0, 256);
     if (strstr(s, "@RG") != s) {
         if (bwa_verbose >= 1) {
@@ -623,7 +648,7 @@ char * bwa_set_rg(const char * s) {
     return 0;
 }
 
-char * bwa_insert_header(const char * s, char * hdr) {
+char *bwa_insert_header(const char *s, char *hdr) {
     int len = 0;
     if (s == 0 || s[0] != '@') {
         return hdr;

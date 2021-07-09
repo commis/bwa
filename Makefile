@@ -29,7 +29,7 @@ all:$(PROG)
 
 bwa:libbwa.a $(AOBJS) main.o
 	$(CC) $(CFLAGS) $(DFLAGS) $(AOBJS) main.o -o $@ -L. -lbwa $(LIBS)
-	mv *.o libbwa.a $(OUTPUT)/
+	mv *.o libbwa.a bwa $(OUTPUT)/
 
 bwamem-lite:libbwa.a example.o
 	$(CC) $(CFLAGS) $(DFLAGS) example.o -o $@ -L. -lbwa $(LIBS)

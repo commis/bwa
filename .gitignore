@@ -8,6 +8,7 @@ data/*.pac
 data/*.sa
 data/*.sam
 lib/*.[oa]
+lib/bwa
 
 .*.swp
 Makefile.bak

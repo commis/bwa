@@ -63,13 +63,10 @@ struct _kswq_t {
  * @return       Query data structure
  */
 kswq_t * ksw_qinit(int size, int qlen, const uint8_t * query, int m, const int8_t * mat) {
-    kswq_t * q;
-    int slen, a, tmp, p;
-
     size = size > 1 ? 2 : 1;
-    p = 8 * (3 - size); // # values per __m128i
-    slen = (qlen + p - 1) / p; // segmented length
-    q = (kswq_t *)malloc(sizeof(kswq_t) + 256 + 16 * slen * (m + 4)); // a single block of memory
+    int p = 8 * (3 - size); // # values per __m128i
+    int slen = (qlen + p - 1) / p; // segmented length
+    kswq_t * q = (kswq_t *)malloc(sizeof(kswq_t) + 256 + 16 * slen * (m + 4)); // a single block of memory
     q->qp = (__m128i * )(((size_t)q + sizeof(kswq_t) + 15) >> 4 << 4); // align memory
     q->H0 = q->qp + slen * m;
     q->H1 = q->H0 + slen;
@@ -79,7 +76,8 @@ kswq_t * ksw_qinit(int size, int qlen, const uint8_t * query, int m, const int8_
     q->qlen = qlen;
     q->size = size;
     // compute shift
-    tmp = m * m;
+    int tmp = m * m;
+    int a;
     for (a = 0, q->shift = 127, q->mdiff = 0; a < tmp; ++a) { // find the minimum and maximum score
         if (mat[a] < (int8_t)q->shift) {
             q->shift = mat[a];
@@ -631,6 +629,15 @@ int ksw_extend(int qlen, const uint8_t * query, int tlen, const uint8_t * target
 
 #define MINUS_INF -0x40000000
 
+/**
+ * 将比对结果push到CIGAR中
+ * @param n_cigar cigar数据长度
+ * @param m_cigar 长度计数，用于分配内存使用
+ * @param cigar cigar数据内容
+ * @param op 操作0，1，2
+ * @param len 写入长度
+ * @return
+ */
 static inline uint32_t
 *
 
@@ -647,6 +654,23 @@ push_cigar(int * n_cigar, int * m_cigar, uint32_t * cigar, int op, int len) {
     return cigar;
 }
 
+/**
+ * 生产比对结果的函数
+ * @param qlen query的长度
+ * @param query query数据指针
+ * @param tlen reference长度
+ * @param target reference数据的指针
+ * @param m 碱基种类=5
+ * @param mat 每个位置的query和target的匹配得分
+ * @param o_del
+ * @param e_del
+ * @param o_ins
+ * @param e_ins
+ * @param w 匹配位置和beg的最大距离w=100
+ * @param n_cigar_ cigar的长度
+ * @param cigar_ cigar的数据指针
+ * @return 得分值
+ */
 int ksw_global2(int qlen, const uint8_t * query, int tlen, const uint8_t * target, int m, const int8_t * mat, int o_del, int e_del, int o_ins, int e_ins, int w, int * n_cigar_, uint32_t ** cigar_) {
     int i, j, k, oe_del = o_del + e_del, oe_ins = o_ins + e_ins;
     if (n_cigar_) {
@@ -769,6 +793,21 @@ int ksw_global2(int qlen, const uint8_t * query, int tlen, const uint8_t * targe
     return score;
 }
 
+/**
+ * 生产比对结果的函数
+ * @param qlen query的长度
+ * @param query query数据指针
+ * @param tlen reference长度
+ * @param target reference数据的指针
+ * @param m 碱基种类=5
+ * @param mat 每个位置的query和target的匹配得分
+ * @param gapo 错配开始的惩罚系数=6
+ * @param gape 错配继续的惩罚系数=1
+ * @param w 匹配位置和beg的最大距离w=100
+ * @param n_cigar_ cigar的长度
+ * @param cigar_ cigar的数据指针
+ * @return 得分值
+ */
 int ksw_global(int qlen, const uint8_t * query, int tlen, const uint8_t * target, int m, const int8_t * mat, int gapo, int gape, int w, int * n_cigar_, uint32_t ** cigar_) {
     return ksw_global2(qlen, query, tlen, target, m, mat, gapo, gape, gapo, gape, w, n_cigar_, cigar_);
 }
