@@ -5,7 +5,10 @@
 int main() {
     printf("Hello, World!\n");
 
-    printf("%d\n", (10 >> 1));
+    int d, n = 5;
+    for (d = 2; 1ul<<d < n; ++d);
+
+    printf("%d\n", d);
 
     return 0;
 }

@@ -225,7 +225,15 @@ typedef struct {
 } mem_seed_t; // unaligned memory
 
 typedef struct {
-    int n, m, first, rid; //n种子的长度，m控制种子链的内存分配
+    /**
+     * n：seeds的长度
+     * first：开始位置
+     */
+    int n, m, first, rid;
+    /**
+     * w：chain的weight，kept是否保留标记
+     * kept：0-丢弃，1-  ，2- ，3-
+     */
     uint32_t w: 29, kept: 2, is_alt: 1;
     float frac_rep;
     int64_t pos;
@@ -233,7 +241,7 @@ typedef struct {
 } mem_chain_t;
 
 typedef struct {
-    size_t n, m; //n mem_chain的长度，m控制内存分配
+    size_t n, m; //n mem_chain的长度
     mem_chain_t *a;
 } mem_chain_v;
 
@@ -432,11 +440,11 @@ mem_chain_v mem_chain(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
 KSORT_INIT(mem_flt, mem_chain_t, flt_lt)
 
 /**
- * 过滤掉种子链中weight比较低的种子链
+ * 过滤掉种子链中weight比较低的种子
  * @param opt 程序执行参数
  * @param n_chn mem_chain长度
  * @param a mem_chain数组
- * @return mem_chain过滤，0-不需要过滤
+ * @return 有效mem_chain的长度
  */
 int mem_chain_flt(const mem_opt_t *opt, int n_chn, mem_chain_t *a) {
     kvec_t(int) chains = {0, 0, 0}; // this keeps int indices of the non-overlapping chains
@@ -451,6 +459,7 @@ int mem_chain_flt(const mem_opt_t *opt, int n_chn, mem_chain_t *a) {
         c->first = -1;
         c->kept = 0;
         c->w = mem_chain_weight(c);
+        //weight低于参数设置值，丢弃该seeds
         if (c->w < opt->min_chain_weight) {
             free(c->seeds);
         } else {
@@ -543,8 +552,6 @@ KSORT_INIT(mem_ars_hash2, mem_alnreg_t, alnreg_hlt2)
 #define PATCH_MIN_SC_RATIO 0.90f
 
 int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, uint8_t *query, const mem_alnreg_t *a, const mem_alnreg_t *b, int *_w) {
-    int w, score, q_s, r_s;
-    double r;
     if (bns == 0 || pac == 0 || query == 0) {
         return 0;
     }
@@ -555,9 +562,9 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
     if (a->qb >= b->qb || a->qe >= b->qe || a->re >= b->re) {
         return 0;
     } // not colinear
-    w = (a->re - b->rb) - (a->qe - b->qb); // required bandwidth
+    int w = (a->re - b->rb) - (a->qe - b->qb); // required bandwidth
     w = w > 0 ? w : -w; // l = abs(l)
-    r = (double)(a->re - b->rb) / (b->re - a->rb) - (double)(a->qe - b->qb) / (b->qe - a->qb); // relative bandwidth
+    double r = (double)(a->re - b->rb) / (b->re - a->rb) - (double)(a->qe - b->qb) / (b->qe - a->qb); // relative bandwidth
     r = r > 0. ? r : -r; // r = fabs(r)
     if (bwa_verbose >= 4) {
         printf("* potential hit merge between [%d,%d)<=>[%ld,%ld) and [%d,%d)<=>[%ld,%ld), @ %s; w=%d, r=%.4g\n",
@@ -577,11 +584,12 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
     if (bwa_verbose >= 4) {
         printf("* test potential hit merge with global alignment; w=%d\n", w);
     }
+
+    int score;
     bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w, bns->l_pac, pac, b->qe - a->qb,
-        query + a->qb,
-        a->rb, b->re, &score, 0, 0);
-    q_s = (int)((double)(b->qe - a->qb) / ((b->qe - b->qb) + (a->qe - a->qb)) * (b->score + a->score) + .499); // predicted score from query
-    r_s = (int)((double)(b->re - a->rb) / ((b->re - b->rb) + (a->re - a->rb)) * (b->score + a->score) + .499); // predicted score from ref
+        query + a->qb, a->rb, b->re, &score, 0, 0);
+    int q_s = (int)((double)(b->qe - a->qb) / ((b->qe - b->qb) + (a->qe - a->qb)) * (b->score + a->score) + .499); // predicted score from query
+    int r_s = (int)((double)(b->re - a->rb) / ((b->re - b->rb) + (a->re - a->rb)) * (b->score + a->score) + .499); // predicted score from ref
     if (bwa_verbose >= 4) {
         printf("* score=%d;(%d,%d)\n", score, q_s, r_s);
     }
@@ -593,11 +601,11 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
 }
 
 int mem_sort_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, uint8_t *query, int n, mem_alnreg_t *a) {
-    int m, i, j;
     if (n <= 1) {
         return n;
     }
     ks_introsort(mem_ars2, n, a); // sort by the END position, not START!
+    int m, i;
     for (i = 0; i < n; ++i) {
         a[i].n_comp = 1;
     }
@@ -606,17 +614,16 @@ int mem_sort_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns, const uint8_
         if (p->rid != a[i - 1].rid || p->rb >= a[i - 1].re + opt->max_chain_gap) {
             continue;
         } // then no need to go into the loop below
-        for (j = i - 1; j >= 0 && p->rid == a[j].rid && p->rb < a[j].re + opt->max_chain_gap; --j) {
+        for (int j = i - 1; j >= 0 && p->rid == a[j].rid && p->rb < a[j].re + opt->max_chain_gap; --j) {
             mem_alnreg_t *q = &a[j];
-            int64_t or, oq, mr, mq;
             int score, w;
             if (q->qe == q->qb) {
                 continue;
             } // a[j] has been excluded
-            or = q->re - p->rb; // overlap length on the reference
-            oq = q->qb < p->qb ? q->qe - p->qb : p->qe - q->qb; // overlap length on the query
-            mr = q->re - q->rb < p->re - p->rb ? q->re - q->rb : p->re - p->rb; // min ref len in alignment
-            mq = q->qe - q->qb < p->qe - p->qb ? q->qe - q->qb : p->qe - p->qb; // min qry len in alignment
+            int64_t or = q->re - p->rb; // overlap length on the reference
+            int64_t oq = q->qb < p->qb ? q->qe - p->qb : p->qe - q->qb; // overlap length on the query
+            int64_t mr = q->re - q->rb < p->re - p->rb ? q->re - q->rb : p->re - p->rb; // min ref len in alignment
+            int64_t mq = q->qe - q->qb < p->qe - p->qb ? q->qe - q->qb : p->qe - p->qb; // min qry len in alignment
             if (or > opt->mask_level_redun * mr && oq > opt->mask_level_redun * mq) { // one of the hits is redundant
                 if (p->score < q->score) {
                     p->qe = p->qb;
@@ -624,8 +631,8 @@ int mem_sort_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns, const uint8_
                 } else {
                     q->qe = q->qb;
                 }
-            } else if (q->rb < p->rb && (score = mem_patch_reg(opt, bns, pac, query, q, p,
-                &w)) > 0) { // then merge q into p
+            } else if (q->rb < p->rb
+                       && (score = mem_patch_reg(opt, bns, pac, query, q, p, &w)) > 0) { // then merge q into p
                 p->n_comp += q->n_comp + 1;
                 p->seedcov = p->seedcov > q->seedcov ? p->seedcov : q->seedcov;
                 p->sub = p->sub > q->sub ? p->sub : q->sub;
@@ -701,11 +708,11 @@ static void mem_mark_primary_se_core(const mem_opt_t *opt, int n, mem_alnreg_t *
 }
 
 int mem_mark_primary_se(const mem_opt_t *opt, int n, mem_alnreg_t *a, int64_t id) {
-    int i, n_pri;
     int_v z = {0, 0, 0};
     if (n == 0) {
         return 0;
     }
+    int i, n_pri;
     for (i = n_pri = 0; i < n; ++i) {
         a[i].sub = a[i].alt_sc = 0, a[i].secondary = a[i].secondary_all = -1, a[i].hash = hash_64(id + i);
         if (!a[i].is_alt) {
@@ -818,7 +825,7 @@ int mem_seed_sw(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, i
 }
 
 /**
- * 在过滤完chain的基础上，根据得分对seeds进行逐个过滤
+ * 在过滤完chain中seeds的基础上，根据得分对seeds再次逐个过滤
  * @param opt 程序允许参数
  * @param bns reference的bns信息
  * @param pac reference的pac信息
@@ -845,7 +852,7 @@ void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint
                 c->seeds[k++] = *s;
             }
         }
-        c->n = k; //更新实际有效seeds的长度
+        c->n = k; //实际有效seeds的长度
     }
 }
 
@@ -856,7 +863,7 @@ void mem_flt_chained_seeds(const mem_opt_t *opt, const bntseq_t *bns, const uint
 static inline int cal_max_gap(const mem_opt_t *opt, int qlen) {
     int l_del = (int)((double)(qlen * opt->a - opt->o_del) / opt->e_del + 1.);
     int l_ins = (int)((double)(qlen * opt->a - opt->o_ins) / opt->e_ins + 1.);
-    int l = l_del > l_ins ? l_del : l_ins;
+    int l = l_del > l_ins ? l_del : l_ins; //取del/ins间的大数
     l = l > 1 ? l : 1;
     return l < opt->w << 1 ? l : opt->w << 1;
 }
@@ -871,7 +878,7 @@ static inline int cal_max_gap(const mem_opt_t *opt, int qlen) {
  * @param l_query query的长度
  * @param query query的数组
  * @param c mem_chain数组
- * @param av 该read在reference真实位置的对应信息，返回数据
+ * @param av 该query在reference真实位置的对应信息，返回数据
  */
 void mem_chain2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const uint8_t *query, const mem_chain_t *c, mem_alnreg_v *av) {
     int max_off[2], aw[2]; // aw: actual bandwidth used in extension
@@ -1352,19 +1359,19 @@ void mem_aln2sam(const mem_opt_t *opt, const bntseq_t *bns, kstring_t *str, bseq
  ************************/
 
 int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a) {
-    int mapq, l, sub = a->sub ? a->sub : opt->min_seed_len * opt->a;
-    double identity;
+    int sub = a->sub ? a->sub : opt->min_seed_len * opt->a;
     sub = a->csub > sub ? a->csub : sub;
     if (sub >= a->score) {
         return 0;
     }
-    l = a->qe - a->qb > a->re - a->rb ? a->qe - a->qb : a->re - a->rb;
-    identity = 1. - (double)(l * opt->a - a->score) / (opt->a + opt->b) / l;
+    int l = a->qe - a->qb > a->re - a->rb ? a->qe - a->qb : a->re - a->rb;
+    double identity = 1. - (double)(l * opt->a - a->score) / (opt->a + opt->b) / l;
+
+    int mapq;
     if (a->score == 0) {
         mapq = 0;
     } else if (opt->mapQ_coef_len > 0) {
-        double tmp;
-        tmp = l < opt->mapQ_coef_len ? 1. : opt->mapQ_coef_fac / log(l);
+        double tmp = l < opt->mapQ_coef_len ? 1. : opt->mapQ_coef_fac / log(l);
         tmp *= identity * identity;
         mapq = (int)(6.02 * (a->score - sub) / opt->a * tmp * tmp + .499);
     } else {
@@ -1449,7 +1456,6 @@ void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, 
     str.s = 0;
     for (int k = 0, l = 0; k < a->n; ++k) {
         mem_alnreg_t *p = &a->a[k];
-        mem_aln_t *q;
         if (p->score < opt->T) {
             continue;
         }
@@ -1459,7 +1465,7 @@ void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, 
         if (p->secondary >= 0 && p->secondary < INT_MAX && p->score < a->a[p->secondary].score * opt->drop_ratio) {
             continue;
         }
-        q = kv_pushp(mem_aln_t, aa);
+        mem_aln_t *q = kv_pushp(mem_aln_t, aa);
         *q = mem_reg2aln(opt, bns, pac, s->l_seq, s->seq, p);
         assert(q->rid >= 0); // this should not happen with the new code
         q->XA = XA ? XA[k] : 0;
@@ -1500,12 +1506,12 @@ void mem_reg2sam(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, 
 
 /**
  * ktf_worker worker1的入口函数，确定reads匹配到reference上的位置信息
- * @param opt 工具mem匹配的参数
- * @param bwt 参考序列的bwt数据
- * @param bns 参考序列的bns数据
- * @param pac 参考序列的pac数据
- * @param l_seq 待比对序列的长度
- * @param seq 待比对序列
+ * @param opt 程序运行的参数
+ * @param bwt reference的bwt数据
+ * @param bns reference的bns数据
+ * @param pac reference的pac数据
+ * @param l_seq query的长度
+ * @param seq query数据数组
  * @param buf
  * @return
  */
@@ -1549,12 +1555,18 @@ mem_alnreg_v mem_align1_core(const mem_opt_t *opt, const bwt_t *bwt, const bntse
     return regs;
 }
 
+/**
+ * 將alnReg转为alignment
+ * @param opt 程序运行的参数
+ * @param bns reference的bns信息
+ * @param pac reference的pac信息
+ * @param l_query query的长度
+ * @param query_ query数据
+ * @param ar reg信息
+ * @return aln信息
+ */
 mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac, int l_query, const char *query_, const mem_alnreg_t *ar) {
     mem_aln_t a;
-    int i, w2, tmp, qb, qe, NM, score, is_rev, last_sc = -(1 << 30), l_MD;
-    int64_t pos, rb, re;
-    uint8_t *query;
-
     memset(&a, 0, sizeof(mem_aln_t));
     if (ar == 0 || ar->rb < 0 || ar->re < 0) { // generate an unmapped record
         a.rid = -1;
@@ -1562,18 +1574,19 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         a.flag |= 0x4;
         return a;
     }
-    qb = ar->qb, qe = ar->qe;
-    rb = ar->rb, re = ar->re;
-    query = malloc(l_query);
-    for (i = 0; i < l_query; ++i) { // convert to the nt4 encoding
+
+    int qb = ar->qb, qe = ar->qe;
+    int64_t rb = ar->rb, re = ar->re;
+    uint8_t *query = malloc(l_query);
+    for (int i = 0; i < l_query; ++i) { // convert to the nt4 encoding
         query[i] = query_[i] < 5 ? query_[i] : nst_nt4_table[(int)query_[i]];
     }
     a.mapq = ar->secondary < 0 ? mem_approx_mapq_se(opt, ar) : 0;
     if (ar->secondary >= 0) {
         a.flag |= 0x100;
     } // secondary alignment
-    tmp = infer_bw(qe - qb, re - rb, ar->truesc, opt->a, opt->o_del, opt->e_del);
-    w2 = infer_bw(qe - qb, re - rb, ar->truesc, opt->a, opt->o_ins, opt->e_ins);
+    int tmp = infer_bw(qe - qb, re - rb, ar->truesc, opt->a, opt->o_del, opt->e_del);
+    int w2 = infer_bw(qe - qb, re - rb, ar->truesc, opt->a, opt->o_ins, opt->e_ins);
     w2 = w2 > tmp ? w2 : tmp;
     if (bwa_verbose >= 4) {
         printf("* Band width: inferred=%d, cmd_opt=%d, alnreg=%d\n", w2, opt->w, ar->w);
@@ -1581,13 +1594,15 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
     if (w2 > opt->w) {
         w2 = w2 < ar->w ? w2 : ar->w;
     }
-    i = 0;
     a.cigar = 0;
+
+    int i = 0, NM, score;
+    int last_sc = -(1 << 30);
     do {
         free(a.cigar);
         w2 = w2 < opt->w << 2 ? w2 : opt->w << 2;
-        a.cigar = bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w2, bns->l_pac, pac, qe - qb,
-            (uint8_t * ) & query[qb], rb, re, &score, &a.n_cigar, &NM);
+        a.cigar = bwa_gen_cigar2(opt->mat, opt->o_del, opt->e_del, opt->o_ins, opt->e_ins, w2, bns->l_pac, pac,
+            qe - qb, (uint8_t * ) & query[qb], rb, re, &score, &a.n_cigar, &NM);
         if (bwa_verbose >= 4) {
             printf("* Final alignment: w2=%d, global_sc=%d, local_sc=%d\n", w2, score, ar->truesc);
         }
@@ -1597,9 +1612,11 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         last_sc = score;
         w2 <<= 1;
     } while (++i < 3 && score < ar->truesc - opt->a);
-    l_MD = strlen((char *)(a.cigar + a.n_cigar)) + 1;
+    int l_MD = strlen((char *)(a.cigar + a.n_cigar)) + 1;
     a.NM = NM;
-    pos = bns_depos(bns, rb < bns->l_pac ? rb : re - 1, &is_rev);
+
+    int is_rev;
+    int64_t pos = bns_depos(bns, rb < bns->l_pac ? rb : re - 1, &is_rev);
     a.is_rev = is_rev;
     if (a.n_cigar > 0) { // squeeze out leading or trailing deletions
         if ((a.cigar[0] & 0xf) == 2) {
@@ -1612,9 +1629,8 @@ mem_aln_t mem_reg2aln(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *
         }
     }
     if (qb != 0 || qe != l_query) { // add clipping to CIGAR
-        int clip5, clip3;
-        clip5 = is_rev ? l_query - qe : qb;
-        clip3 = is_rev ? qb : l_query - qe;
+        int clip5 = is_rev ? l_query - qe : qb;
+        int clip3 = is_rev ? qb : l_query - qe;
         a.cigar = realloc(a.cigar, 4 * (a.n_cigar + 2) + l_MD);
         if (clip5) {
             memmove(a.cigar + 1, a.cigar, a.n_cigar * 4 + l_MD); // make room for 5'-end clipping
@@ -1649,6 +1665,12 @@ typedef struct {
     int64_t n_processed;
 } worker_t;
 
+/**
+ * worker1的执行函数，控制种子链的筛选及局部对比逻辑
+ * @param data 参数数据
+ * @param i query的索引号
+ * @param tid 线程Id
+ */
 static void worker1(void *data, int i, int tid) {
     worker_t *w = (worker_t *)data;
     if (!(w->opt->flag & MEM_F_PE)) {
@@ -1661,8 +1683,7 @@ static void worker1(void *data, int i, int tid) {
             printf("=====> Processing read '%s'/1 <=====\n", w->seqs[i << 1 | 0].name);
         }
         w->regs[i << 1 | 0] = mem_align1_core(w->opt, w->bwt, w->bns, w->pac, w->seqs[i << 1 | 0].l_seq,
-            w->seqs[i << 1 | 0].seq,
-            w->aux[tid]);
+            w->seqs[i << 1 | 0].seq, w->aux[tid]);
         if (bwa_verbose >= 4) {
             printf("=====> Processing read '%s'/2 <=====\n", w->seqs[i << 1 | 1].name);
         }
@@ -1742,7 +1763,7 @@ void mem_process_seqs(const mem_opt_t *opt, const bwt_t *bwt, const bntseq_t *bn
     kt_for(opt->n_threads, worker2, &w, (opt->flag & MEM_F_PE) ? n >> 1 : n); // generate alignment
     free(w.regs);
     if (bwa_verbose >= 3) {
-        fprintf(stderr, "[M::%s] Processed %d reads in %.3f CPU sec, %.3f real sec\n", __func__, n, cputime() - ctime,
-            realtime() - rtime);
+        fprintf(stderr, "[M::%s] Processed %d reads in %.3f CPU sec, %.3f real sec\n",
+            __func__, n, cputime() - ctime, realtime() - rtime);
     }
 }

@@ -15,8 +15,8 @@
 #ifndef KSTRING_T
 #define KSTRING_T kstring_t
 typedef struct __kstring_t {
-	size_t l, m;
-	char *s;
+	size_t l, m; //l为指针s的长度
+	char *s; //存放数据的指针数组
 } kstring_t;
 #endif
 

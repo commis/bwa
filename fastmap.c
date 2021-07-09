@@ -77,9 +77,7 @@ static void *process(void *shared, int step, void *_data) {
 
     if (step == 0) {
         //step 1: 读取待比对基因序列数据，最多支持两个压缩文件
-        ktp_data_t *ret;
-        int64_t size = 0;
-        ret = calloc(1, sizeof(ktp_data_t));
+        ktp_data_t *ret = calloc(1, sizeof(ktp_data_t));
         ret->seqs = bseq_read(aux->actual_chunk_size, &ret->n_seqs, aux->ks, aux->ks2);
         if (ret->seqs == 0) {
             free(ret);
@@ -91,6 +89,7 @@ static void *process(void *shared, int step, void *_data) {
                 ret->seqs[i].comment = 0;
             }
         }
+        int64_t size = 0;
         for (int i = 0; i < ret->n_seqs; ++i) {
             size += ret->seqs[i].l_seq;
         }

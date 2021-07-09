@@ -254,9 +254,13 @@ typedef struct {
         }                                                               \
     }
 
+//归并排序：建立在归并操作上的一种有效、稳定的排序算法，采用分治法的一个非常典型的应用。
 #define ks_mergesort(name, n, a, t) ks_mergesort_##name(n, a, t)
+//内省排序：首先从快速排序开始，当递归深度超过一定深度（深度为排序元素数量的对数值）后转为堆排序。
 #define ks_introsort(name, n, a) ks_introsort_##name(n, a)
+//梳排序：基于冒泡排序，与冒泡不同的是梳排序比较的是固定距离处的数的比较和交换。
 #define ks_combsort(name, n, a) ks_combsort_##name(n, a)
+//堆排序：利用堆这种数据结构所设计的一种排序算法。
 #define ks_heapsort(name, n, a) ks_heapsort_##name(n, a)
 #define ks_heapmake(name, n, a) ks_heapmake_##name(n, a)
 #define ks_heapadjust(name, i, n, a) ks_heapadjust_##name(i, n, a)
