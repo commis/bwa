@@ -107,8 +107,8 @@ typedef struct {
 } mem_alnreg_t;
 
 typedef struct {
-    size_t n, m;
-    mem_alnreg_t *a;
+    size_t n, m; //n数据a的实际长度，m控制a的内存扩展分配
+    mem_alnreg_t *a; //存储实际的数据
 } mem_alnreg_v;
 
 typedef struct {
@@ -144,8 +144,6 @@ void smem_config(smem_i *itr, int min_intv, int max_len, uint64_t max_intv);
 const bwtintv_v *smem_next(smem_i *itr);
 
 mem_opt_t *mem_opt_init(void);
-
-void mem_fill_scmat(int a, int b, int8_t mat[25]);
 
 /**
  * Align a batch of sequences and generate the alignments in the SAM format

@@ -196,7 +196,11 @@ bntseq_t *bns_restore_core(const char *ann_filename, const char *amb_filename, c
     err_fatal(__func__, "Parse error reading %s\n", fname);
 }
 
-//加载bns数据，输入：prefix-reference文件名
+/**
+ * 从文件中读取bns数据（pac/ann/amb/seq等）
+ * @param prefix 文件名称
+ * @return bntseq数据指针
+ */
 bntseq_t *bns_restore(const char *prefix) {
     char ann_filename[1024], amb_filename[1024], pac_filename[1024], alt_filename[1024];
     FILE *fp;
@@ -208,7 +212,7 @@ bntseq_t *bns_restore(const char *prefix) {
 
     if ((fp = fopen(strcat(strcpy(alt_filename, prefix), ".alt"), "r")) != 0) { // read .alt file if present
         char str[1024];
-        khash_t(str) * h;
+        khash_t(str) *h;
         int c, i, absent;
         khint_t k;
         h = kh_init(str);
@@ -262,10 +266,23 @@ void bns_destroy(bntseq_t *bns) {
     }
 }
 
-// 实现pac的编码和解码, pac用于存放压缩后的碱基信息
+/**
+ * 实现pac的编码和解码, pac用于存放压缩后的碱基信息
+ */
 #define _set_pac(pac, l, c) ((pac)[(l)>>2] |= (c)<<((~(l)&3)<<1))
 #define _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
 
+/**
+ * 将reference中的每个碱基编码并加入到pac的数据指针中
+ * @param seq reference的序列数据
+ * @param bns bns数据指针
+ * @param pac pac数据的指针
+ * @param m_pac pac数据的长度，一般用于控制pac数据内存的分配
+ * @param m_seqs ann数据seq的长度
+ * @param m_holes 用于控制bns->m_holes数据的内存分配
+ * @param q amb信息
+ * @return pac数据
+ */
 static uint8_t *add1(const kseq_t *seq, bntseq_t *bns, uint8_t *pac, int64_t *m_pac, int *m_seqs, int *m_holes, bntamb1_t **q) {
     bntann1_t *p;
     int i, lasts;  //i为序列中字符的位置，从0开始计数；lasts为i的前一个碱基字符
@@ -317,7 +334,13 @@ static uint8_t *add1(const kseq_t *seq, bntseq_t *bns, uint8_t *pac, int64_t *m_
     return pac;
 }
 
-// 将基因原始序列转换方法，生成pac文件，且pac数据中包含了其反向互补链数据，并返回pac的长度
+/**
+ * 将参考基因序列转化为bns数据（包括：pac）
+ * @param fp_fa reference文件
+ * @param prefix 文件名前缀，默认为reference文件名
+ * @param for_only 是否补充反向序列
+ * @return pac的长度
+ */
 int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only) {
 
     kseq_t *seq; //输入参数fp_fa文件内容，映射出来的结构化数据对象

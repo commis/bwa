@@ -153,7 +153,7 @@ void bseq_classify(int n, bseq1_t *seqs, int m[2], bseq1_t *sep[2]) {
 /*****************
  * CIGAR related *
  *****************/
-// 匹配矩阵的初始化
+// 匹配得分矩阵的初始化，在mem匹配算法中用到
 /*
 i\j	 0	 1	 2	 3	 $
 0	 1	-4	-4	-4	-1
@@ -363,6 +363,11 @@ char *bwa_idx_infer_prefix(const char *hint) {
     }
 }
 
+/**
+ * 从文件读取bwt数据
+ * @param hint 文件名
+ * @return bwt数据指针
+ */
 bwt_t *bwa_idx_load_bwt(const char *hint) {
     char *prefix = bwa_idx_infer_prefix(hint);
     if (prefix == 0) {
@@ -381,6 +386,12 @@ bwt_t *bwa_idx_load_bwt(const char *hint) {
     return bwt;
 }
 
+/**
+ * 从磁盘文件加载FM-Index相关数据
+ * @param hint reference文件名称
+ * @param which IDX 枚举值
+ * @return index数据
+ */
 bwaidx_t *bwa_idx_load_from_disk(const char *hint, int which) {
     char *prefix = bwa_idx_infer_prefix(hint);
     if (prefix == 0) {
@@ -417,6 +428,12 @@ bwaidx_t *bwa_idx_load_from_disk(const char *hint, int which) {
     return idx;
 }
 
+/**
+ * 加载FM-Index相关数据
+ * @param hint reference文件名称
+ * @param which IDX 枚举值
+ * @return index数据
+ */
 bwaidx_t *bwa_idx_load(const char *hint, int which) {
     return bwa_idx_load_from_disk(hint, which);
 }
@@ -454,7 +471,7 @@ int bwa_mem2idx(int64_t l_mem, uint8_t *mem, bwaidx_t *idx) {
     memcpy(idx->bwt, mem + k, x);
     k += x;
     x = idx->bwt->bwt_size * 4;
-    idx->bwt->bwt = (uint32_t * )(mem + k);
+    idx->bwt->bwt = (uint32_t *)(mem + k);
     k += x;
     x = idx->bwt->n_sa * sizeof(bwtint_t);
     idx->bwt->sa = (bwtint_t *)(mem + k);
@@ -478,7 +495,7 @@ int bwa_mem2idx(int64_t l_mem, uint8_t *mem, bwaidx_t *idx) {
         idx->bns->anns[i].anno = (char *)(mem + k);
         k += strlen(idx->bns->anns[i].anno) + 1;
     }
-    idx->pac = (uint8_t * )(mem + k);
+    idx->pac = (uint8_t *)(mem + k);
     k += idx->bns->l_pac / 4 + 1;
     assert(k == l_mem);
 

@@ -1497,7 +1497,14 @@ static void BWTIncConstruct(BWTInc *bwtInc, const bgint_t numChar) {
 
 }
 
-//读取pac文件，并根据pac数据构建bwt数据
+//
+/**
+ * 读取pac文件，并根据pac数据构建bwt数据
+ * @param inputFileName 输入文件名称
+ * @param initialMaxBuildSize
+ * @param incMaxBuildSize
+ * @return
+ */
 BWTInc *BWTIncConstructFromPacked(const char *inputFileName, bgint_t initialMaxBuildSize, bgint_t incMaxBuildSize) {
 
     FILE *packedFile;
@@ -1648,6 +1655,12 @@ void BWTSaveBwtCodeAndOcc(const BWT *bwt, const char *bwtFileName, const char *o
 }
 
 // 从pac文件读取数据后转换为bwt文件
+/**
+ * 生成bwt数据
+ * @param fn_pac 输出pac文件名称
+ * @param fn_bwt bwt信息
+ * @param block_size block限制数据
+ */
 void bwt_bwtgen2(const char *fn_pac, const char *fn_bwt, int block_size) {
     BWTInc *bwtInc;
     bwtInc = BWTIncConstructFromPacked(fn_pac, block_size, block_size);

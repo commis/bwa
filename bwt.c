@@ -64,6 +64,11 @@ bwt_invPsi(const bwt_t *bwt, bwtint_t k) {
 }
 
 // bwt->bwt and bwt->occ must be precalculated
+/**
+ * 通过bwt数据计算sa数据
+ * @param bwt bwt数据指针
+ * @param intv interval值，默认值32
+ */
 void bwt_cal_sa(bwt_t *bwt, int intv) {
     bwtint_t isa, sa, i; // S(isa) = sa
     int intv_round = intv;
@@ -114,6 +119,13 @@ static inline int __occ_aux(uint64_t y, int c) {
     return ((y + (y >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
 }
 
+/**
+ * 通过bwt数据计算Qcc
+ * @param bwt
+ * @param k
+ * @param c
+ * @return Qcc的值
+ */
 bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c) {
     bwtint_t n;
     uint32_t *p, *end;
@@ -134,12 +146,12 @@ bwtint_t bwt_occ(const bwt_t *bwt, bwtint_t k, ubyte_t c) {
     end = p + (((k >> 5) - ((k & ~OCC_INTV_MASK) >> 5)) << 1);
     for (; p < end; p += 2) {
         n += __occ_aux((uint64_t)
-        p[0] << 32 | p[1], c);
+                           p[0] << 32 | p[1], c);
     }
 
     // calculate Occ
     n += __occ_aux(((uint64_t)
-    p[0] << 32 | p[1]) &~((1ull << ((~k & 31) << 1)) - 1), c);
+                        p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
     if (c == 0) {
         n -= ~k & 31;
     } // corrected for the masked bits
@@ -170,11 +182,11 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         j = k >> 5 << 5;
         for (i = k / OCC_INTERVAL * OCC_INTERVAL; i < j; i += 32, p += 2) {
             n += __occ_aux((uint64_t)
-            p[0] << 32 | p[1], c);
+                               p[0] << 32 | p[1], c);
         }
         m = n;
         n += __occ_aux(((uint64_t)
-        p[0] << 32 | p[1]) &~((1ull << ((~k & 31) << 1)) - 1), c);
+                            p[0] << 32 | p[1]) & ~((1ull << ((~k & 31) << 1)) - 1), c);
         if (c == 0) {
             n -= ~k & 31;
         } // corrected for the masked bits
@@ -183,10 +195,10 @@ void bwt_2occ(const bwt_t *bwt, bwtint_t k, bwtint_t l, ubyte_t c, bwtint_t *ok,
         j = l >> 5 << 5;
         for (; i < j; i += 32, p += 2) {
             m += __occ_aux((uint64_t)
-            p[0] << 32 | p[1], c);
+                               p[0] << 32 | p[1], c);
         }
         m += __occ_aux(((uint64_t)
-        p[0] << 32 | p[1]) &~((1ull << ((~l & 31) << 1)) - 1), c);
+                            p[0] << 32 | p[1]) & ~((1ull << ((~l & 31) << 1)) - 1), c);
         if (c == 0) {
             m -= ~l & 31;
         } // corrected for the masked bits
@@ -475,7 +487,7 @@ int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int m
             if (ok[c].x[2] < max_intv && i - x >= min_len) {
                 *mem = ok[c];
                 mem->info = (uint64_t)
-                x << 32 | (i + 1);
+                                x << 32 | (i + 1);
                 return i + 1;
             }
             ik = ok[c];
@@ -489,7 +501,11 @@ int bwt_seed_strategy1(const bwt_t *bwt, int len, const uint8_t *q, int x, int m
 /*************************
  * Read/write BWT and SA *
  *************************/
-
+/**
+ * 输出bwt数据对bwt数据文件
+ * @param fn bwt数据文件名
+ * @param bwt bwt只读数据指针
+ */
 void bwt_dump_bwt(const char *fn, const bwt_t *bwt) {
     FILE *fp;
     fp = xopen(fn, "wb");
@@ -500,6 +516,11 @@ void bwt_dump_bwt(const char *fn, const bwt_t *bwt) {
     err_fclose(fp);
 }
 
+/**
+ * sa数据写入到文件
+ * @param fn sa数据文件名
+ * @param bwt bwt数据指针
+ */
 void bwt_dump_sa(const char *fn, const bwt_t *bwt) {
     FILE *fp;
     fp = xopen(fn, "wb");
@@ -548,7 +569,11 @@ void bwt_restore_sa(const char *fn, bwt_t *bwt) {
     err_fclose(fp);
 }
 
-//加载bwt数据，fn：bwt文件名
+/**
+ * 从bwt文件中读取bwt数据
+ * @param fn bwt数据文件名
+ * @return bwt的数据指针
+ */
 bwt_t *bwt_restore_bwt(const char *fn) {
     bwt_t *bwt;
     FILE *fp;
@@ -572,6 +597,10 @@ bwt_t *bwt_restore_bwt(const char *fn) {
     return bwt;
 }
 
+/**
+ * 释放bwt数据指针内存
+ * @param bwt bwt数据指针
+ */
 void bwt_destroy(bwt_t *bwt) {
     if (bwt == 0) {
         return;

@@ -63,6 +63,10 @@ int main_pemerge(int argc, char *argv[]);
 
 int main_maxk(int argc, char *argv[]);
 
+/**
+ * 使用帮助打印输出
+ * @return
+ */
 static int usage() {
     fprintf(stderr, "\n");
     fprintf(stderr, "Program: bwa (alignment via Burrows-Wheeler transformation)\n");
@@ -93,6 +97,12 @@ static int usage() {
     return 1;
 }
 
+/**
+ * 程序主函数
+ * @param argc 参数个数
+ * @param argv 参数内容
+ * @return
+ */
 int main(int argc, char *argv[]) {
     extern char *bwa_pg;
     int i, ret;

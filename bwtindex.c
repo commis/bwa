@@ -50,7 +50,11 @@
 
 int is_bwt(ubyte_t *T, int n);
 
-//从pac文件中读取文件长度，并计算出基于序列的长度
+/**
+ * 从pac文件中读取文件长度，并计算出基于序列的长度
+ * @param fn_pac 读取的pac文件名
+ * @return pac对于的reference的长度
+ */
 int64_t bwa_seq_len(const char *fn_pac) {
     FILE *fp;
     int64_t pac_len;
@@ -60,10 +64,15 @@ int64_t bwa_seq_len(const char *fn_pac) {
     pac_len = err_ftell(fp);
     err_fread_noeof(&c, 1, 1, fp);
     err_fclose(fp);
-    return (pac_len - 1) * 4 + (int) c;
+    return (pac_len - 1) * 4 + (int)c;
 }
 
-// 将pac文件的数据转为bwt数据
+/**
+ * 将pac文件的数据转为bwt数据
+ * @param fn_pac 输出的pac文件名
+ * @param use_is 使用BWT的IS算法
+ * @return bwt数据
+ */
 bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     bwt_t *bwt;
     ubyte_t *buf, *buf2; //buf2读取pac文件的缓存区；buf为pac解码后的缓存区，用做BWT算法的输入数据
@@ -71,19 +80,19 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
     FILE *fp;
 
     // initialization 初始化各变量
-    bwt = (bwt_t *) calloc(1, sizeof(bwt_t));
+    bwt = (bwt_t *)calloc(1, sizeof(bwt_t));
     bwt->seq_len = bwa_seq_len(fn_pac); //从pac文件计算得到序列的长度
     bwt->bwt_size = (bwt->seq_len + 15) >> 4;  //bwt长度，256 = 16*16，即 16*16 的矩阵
     fp = xopen(fn_pac, "rb");
 
     // prepare sequence
     pac_size = (bwt->seq_len >> 2) + ((bwt->seq_len & 3) == 0 ? 0 : 1); //大约为 seq / 4 长度
-    buf2 = (ubyte_t *) calloc(pac_size, 1);
+    buf2 = (ubyte_t *)calloc(pac_size, 1);
     err_fread_noeof(buf2, 1, pac_size, fp);
     err_fclose(fp);
 
     memset(bwt->L2, 0, 5 * 4);
-    buf = (ubyte_t *) calloc(bwt->seq_len + 1, 1);
+    buf = (ubyte_t *)calloc(bwt->seq_len + 1, 1);
     for (i = 0; i < bwt->seq_len; ++i) {
         // pac的解码，作用同 _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
         buf[i] = buf2[i >> 2] >> ((3 - (i & 3)) << 1) & 3;
@@ -129,7 +138,7 @@ bwt_t *bwt_pac2bwt(const char *fn_pac, int use_is) {
         rope_destroy(r);
     }
     // 为bwt分配内存空间并计算获得bwt
-    bwt->bwt = (uint32_t *) calloc(bwt->bwt_size, 4);
+    bwt->bwt = (uint32_t *)calloc(bwt->bwt_size, 4);
     //把 seq 中的每256个转换成一个16*16的矩阵，并压缩为bwt的值
     for (i = 0; i < bwt->seq_len; ++i) {
         // buf[i] << ((15 - (i & 15)) << 1) 即：Burrows Wheeler Transform转换算法中的左移操作
@@ -165,13 +174,17 @@ int bwa_pac2bwt(int argc, char *argv[]) {
 
 #define bwt_B00(b, k) ((b)->bwt[(k)>>4]>>((~(k)&0xf)<<1)&3)
 
+/**
+ * 更新bwt数据中的bwt表
+ * @param bwt bwt数据指针
+ */
 void bwt_bwtupdate_core(bwt_t *bwt) {
     bwtint_t i, k, c[4], n_occ;
     uint32_t *buf;
 
     n_occ = (bwt->seq_len + OCC_INTERVAL - 1) / OCC_INTERVAL + 1;
     bwt->bwt_size += n_occ * sizeof(bwtint_t); // the new size
-    buf = (uint32_t *) calloc(bwt->bwt_size, 4); // will be the new bwt
+    buf = (uint32_t *)calloc(bwt->bwt_size, 4); // will be the new bwt
     c[0] = c[1] = c[2] = c[3] = 0;
     for (i = k = 0; i < bwt->seq_len; ++i) {
         if (i % OCC_INTERVAL == 0) {
@@ -230,6 +243,12 @@ int bwa_bwt2sa(int argc, char *argv[]) // the "bwt2sa" command
 }
 
 // the "index" command
+/**
+ * bwa index命令的主函数，将参考序列转化为多个中间数据文件（包括：bwt/pac/sa/ann/amb）
+ * @param argc 参数个数
+ * @param argv 参数内容
+ * @return
+ */
 int bwa_index(int argc, char *argv[]) {
     //block_size 默认10M
     int c, algo_type = BWTALGO_AUTO, is_64 = 0, block_size = 10000000;
@@ -273,7 +292,8 @@ int bwa_index(int argc, char *argv[]) {
         fprintf(stderr, "Usage:   bwa index [options] <in.fasta>\n\n");
         fprintf(stderr, "Options: -a STR    BWT construction algorithm: bwtsw, is or rb2 [auto]\n");
         fprintf(stderr, "         -p STR    prefix of the index [same as fasta name]\n");
-        fprintf(stderr, "         -b INT    block size for the bwtsw algorithm (effective with -a bwtsw) [%d]\n", block_size);
+        fprintf(stderr, "         -b INT    block size for the bwtsw algorithm (effective with -a bwtsw) [%d]\n",
+            block_size);
         fprintf(stderr, "         -6        index files named as <in.fasta>.64.* instead of <in.fasta>.* \n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Warning: `-a bwtsw' does not work for short genomes, while `-a is' and\n");
@@ -306,9 +326,9 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
     clock_t t;
     int64_t l_pac;
 
-    str = (char *) calloc(strlen(prefix) + 10, 1);
-    str2 = (char *) calloc(strlen(prefix) + 10, 1);
-    str3 = (char *) calloc(strlen(prefix) + 10, 1);
+    str = (char *)calloc(strlen(prefix) + 10, 1);
+    str2 = (char *)calloc(strlen(prefix) + 10, 1);
+    str3 = (char *)calloc(strlen(prefix) + 10, 1);
 
     { // nucleotide indexing
         gzFile fp = xzopen(fa, "r");
@@ -318,7 +338,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         t = clock();
         l_pac = bns_fasta2bntseq(fp, prefix, 0);
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+            fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
         }
         err_gzclose(fp);
     }
@@ -346,7 +366,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
             bwt_destroy(bwt);
         }
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "[bwa_index] %.2f seconds elapse.\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+            fprintf(stderr, "[bwa_index] %.2f seconds elapse.\n", (float)(clock() - t) / CLOCKS_PER_SEC);
         }
     }
     {
@@ -362,7 +382,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         bwt_dump_bwt(str, bwt);
         bwt_destroy(bwt);
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+            fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
         }
     }
     {
@@ -373,7 +393,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         }
         l_pac = bns_fasta2bntseq(fp, prefix, 1);
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+            fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
         }
         err_gzclose(fp);
     }
@@ -392,7 +412,7 @@ int bwa_idx_build(const char *fa, const char *prefix, int algo_type, int block_s
         bwt_dump_sa(str3, bwt);
         bwt_destroy(bwt);
         if (bwa_verbose >= 3) {
-            fprintf(stderr, "%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
+            fprintf(stderr, "%.2f sec\n", (float)(clock() - t) / CLOCKS_PER_SEC);
         }
     }
     free(str3);
